@@ -1,0 +1,69 @@
+.header {
+  background-color: var(--bg-secondary);
+  padding: 1rem 2rem;
+  border-bottom: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.logo {
+  height: 50px;
+  width: auto;
+  object-fit: contain;
+}
+
+.inputContainer {
+  flex: 1;
+  max-width: 600px;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.input:focus {
+  border-color: var(--accent-red);
+}
+
+.input::placeholder {
+  color: var(--text-secondary);
+}
+
+.addButton {
+  padding: 0.75rem 2rem;
+  background-color: var(--accent-red);
+  color: var(--text-primary);
+  font-weight: bold;
+  font-size: 1rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.addButton:hover {
+  background-color: var(--hover-red);
+}
+
+.addButton:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.error {
+  color: var(--accent-red);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}

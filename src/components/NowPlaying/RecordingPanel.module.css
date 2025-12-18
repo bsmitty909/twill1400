@@ -1,0 +1,140 @@
+.container {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(229, 9, 20, 0.1) 0%, rgba(34, 31, 31, 0.8) 100%);
+  border-radius: 12px;
+  border: 2px solid rgba(229, 9, 20, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.recordButton {
+  background: linear-gradient(135deg, var(--accent-red) 0%, var(--hover-red) 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(229, 9, 20, 0.3);
+}
+
+.recordButton:hover {
+  box-shadow: 0 4px 16px rgba(229, 9, 20, 0.5);
+  transform: translateY(-2px);
+}
+
+.stopButton {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.stopButton:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.recordingStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(229, 9, 20, 0.2);
+  border-radius: 50px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.recordingDot {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-red);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.downloadButton {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.downloadButton:hover {
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.5);
+  transform: translateY(-2px);
+}
+
+.uploadButton {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.uploadButton:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.5);
+  transform: translateY(-2px);
+}
+
+.uploadButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.clearButton {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+.clearButton:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.error {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(229, 9, 20, 0.2);
+  border: 1px solid var(--accent-red);
+  border-radius: 8px;
+  color: var(--text-primary);
+}
+
+.success {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid #4CAF50;
+  border-radius: 8px;
+  color: var(--text-primary);
+}

@@ -1,0 +1,81 @@
+.container {
+  position: absolute;
+  top: 60px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.5);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button.downloading {
+  opacity: 1;
+  animation: spin 1s linear infinite;
+}
+
+.button.success {
+  opacity: 1;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+}
+
+.button.error {
+  opacity: 1;
+  background: linear-gradient(135deg, var(--accent-red) 0%, var(--hover-red) 100%);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.message {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.message.downloading {
+  background: rgba(33, 150, 243, 0.9);
+  color: white;
+}
+
+.message.success {
+  background: rgba(76, 175, 80, 0.9);
+  color: white;
+}
+
+.message.error {
+  background: rgba(229, 9, 20, 0.9);
+  color: white;
+}

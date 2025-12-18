@@ -1,84 +1,104 @@
 # Git Commands to Push TWill to GitHub
 
-## Push to Your Existing Repository
+## Push Latest Version to Repository
 
-Since you already have a GitHub repository at https://github.com/bsmitty909/twill1400, use these commands:
+Your GitHub repository: **https://github.com/bsmitty909/twill1400**
 
 ```bash
 cd /Users/brandonsmith/Desktop/twill
 
-# Check if git is already initialized
-git status
-
-# If not initialized, initialize git
-git init
-
-# Add the remote repository
-git remote add origin https://github.com/bsmitty909/twill1400.git
-
-# Or if remote already exists, update it:
-# git remote set-url origin https://github.com/bsmitty909/twill1400.git
-
-# Stage all files
+# Stage all changes
 git add .
 
-# Commit with a descriptive message
-git commit -m "Phase 1 Complete: TWill multi-stream video player
+# Commit with comprehensive message
+git commit -m "Complete TWill implementation with video download feature
 
-Features:
+Phase 1 Features:
 - Netflix-inspired modern UI with gradients and glass effects
-- 4-slot video grid with resizable panes
-- YouTube, Twitch, and Kick support
-- Smart audio control (single active slot)
-- TWill branding with logo and text
+- 4-slot resizable video grid with drag-to-resize dividers
+- YouTube, Twitch, and Kick multi-platform support
+- Smart audio control with single active slot
+- TWill the content plug branding with Netflix font
+- Circular audio buttons and pill-shaped inputs
+- Responsive scrollable layout
 - Error handling with ErrorBoundary
-- Scrollable responsive layout
-- Unique player IDs for multiple videos
-- Modern animations and hover effects"
+- Unique player IDs for multiple video instances
+- Iframe reload for reliable Twitch/Kick muting
+
+Phase 2 Features:
+- Video download button on each slot (top-left 💾 icon)
+- yt-dlp integration for downloading from source URLs
+- Express backend API server with TypeScript
+- DreamHost DreamObjects S3 cloud storage integration
+- Multipart file upload with 500MB limit
+- Download and auto-upload to S3 workflow
+- Status indicators for download/upload progress
+- MediaRecorder API implementation (for future screen capture)
+- Restart scripts for backend server
+- .env protection in gitignore
+
+Technical Improvements:
+- Modern cubic-bezier animations throughout
+- Glass-morphism header with backdrop blur
+- Gradient backgrounds and buttons
+- Hover effects (lift, scale, rotate)
+- Proper cleanup on component unmount
+- S3 client with forcePathStyle for compatibility
+- Error handling for downloads and uploads
+- Protected credentials in backend/.env"
 
 # Push to GitHub
-git push -u origin main
+git push origin main
 
-# If the branch is master instead of main:
-# git push -u origin master
+# If using master branch:
+# git push origin master
 
-# If you need to force push (overwrites remote):
-# git push -u origin main --force
+# For first-time push or if remote doesn't exist:
+# git remote add origin https://github.com/bsmitty909/twill1400.git
+# git push -u origin main
 ```
 
-## If You Get Authentication Errors
+## What's Being Pushed
 
-```bash
-# Use GitHub CLI if installed
-gh auth login
-
-# Or use a personal access token instead of password
-# Go to: https://github.com/settings/tokens
-# Create new token with 'repo' scope
-# Use token as password when prompted
-```
-
-## After Successful Push
-
-Your repository will be available at:
-**https://github.com/bsmitty909/twill1400**
-
-## Files Being Pushed
-
+### Frontend Files:
 - Complete React application with TypeScript
-- All components (Header, NowPlaying, Players, ErrorBoundary)
+- All components (Header, NowPlaying, VideoGrid, Players)
+- DownloadButton component for per-video archiving
 - Services (URL parser)
 - Contexts (VideoContext)
-- Modern CSS styling
-- Plans and architecture documentation
+- Hooks (useMediaRecorder)
+- Modern CSS with Netflix styling
+- TWill logo and branding
+
+### Backend Files:
+- Express server with TypeScript
+- S3 service for DreamHost integration
+- Upload and download routes
+- Video downloader service (yt-dlp wrapper)
 - Package.json with dependencies
+- .env.example template (credentials excluded)
+
+### Documentation:
+- plans/plan.md - Complete implementation plan
+- plans/twill-architecture.md - System architecture
+- README.md - User guide
+- GIT_COMMANDS.md - This file
+
+### Configuration:
+- TypeScript configs
 - Vite configuration
-- TWill logo image
+- .gitignore (protects backend/.env)
 
-**Note:** The `.gitignore` file is already configured to exclude:
-- node_modules/
-- dist/
-- .env files
-- Build artifacts
+## After Pushing
 
-Run these commands in your terminal to push to GitHub!
+View your repository at:
+**https://github.com/bsmitty909/twill1400**
+
+## Notes
+
+- `.gitignore` excludes `backend/.env` to protect S3 credentials
+- `backend/.env.example` provides template for others
+- Others will need to install yt-dlp and ffmpeg separately
+- Backend requires npm install in backend directory
+
+Ready to push latest version with video download feature!

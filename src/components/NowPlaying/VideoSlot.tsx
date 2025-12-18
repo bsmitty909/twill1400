@@ -5,6 +5,7 @@ import { TwitchPlayer } from '../Players/TwitchPlayer';
 import { KickPlayer } from '../Players/KickPlayer';
 import { useVideo } from '../../contexts/VideoContext';
 import { ErrorBoundary } from '../ErrorBoundary';
+import { DownloadButton } from './DownloadButton';
 import styles from './NowPlaying.module.css';
 
 interface VideoSlotProps {
@@ -43,6 +44,12 @@ export function VideoSlot({ slot, isActive, onSlotClick }: VideoSlotProps) {
       >
         ✕
       </button>
+      
+      <DownloadButton
+        platform={slot.platform}
+        videoId={slot.videoId}
+        slotId={slot.id}
+      />
       
       <div className={styles.playerContainer}>
         <ErrorBoundary slotId={slot.id}>

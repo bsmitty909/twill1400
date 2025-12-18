@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styles from './DownloadButton.module.css';
 
 interface DownloadButtonProps {
@@ -7,7 +7,7 @@ interface DownloadButtonProps {
   slotId: number;
 }
 
-export function DownloadButton({ platform, videoId, slotId }: DownloadButtonProps) {
+export function DownloadButton({ platform, videoId }: DownloadButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');

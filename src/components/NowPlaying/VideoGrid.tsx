@@ -1,4 +1,3 @@
-import React from 'react';
 import Split from 'react-split';
 import { VideoSlot } from './VideoSlot';
 import { useVideo } from '../../contexts/VideoContext';

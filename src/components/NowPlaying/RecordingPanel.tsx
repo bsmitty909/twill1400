@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMediaRecorder } from '../../hooks/useMediaRecorder';
 import styles from './RecordingPanel.module.css';
 
@@ -6,7 +6,7 @@ interface RecordingPanelProps {
   gridRef: React.RefObject<HTMLDivElement>;
 }
 
-export function RecordingPanel({ gridRef }: RecordingPanelProps) {
+export function RecordingPanel(_props: RecordingPanelProps) {
   const {
     isRecording,
     recordedBlob,

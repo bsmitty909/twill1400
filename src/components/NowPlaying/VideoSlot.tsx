@@ -1,4 +1,3 @@
-import React from 'react';
 import type { VideoSlot as VideoSlotType } from '../../types/index.ts';
 import { YouTubePlayer } from '../Players/YouTubePlayer';
 import { TwitchPlayer } from '../Players/TwitchPlayer';

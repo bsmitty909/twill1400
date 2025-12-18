@@ -1,4 +1,3 @@
-import React from 'react';
 import { useVideo } from '../../contexts/VideoContext';
 import { VideoGrid } from './VideoGrid';
 import styles from './NowPlaying.module.css';

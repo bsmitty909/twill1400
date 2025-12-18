@@ -1,4 +1,3 @@
-import React from 'react';
 import { VideoProvider } from './contexts/VideoContext';
 import { Header } from './components/Header/Header';
 import { NowPlaying } from './components/NowPlaying/NowPlaying';

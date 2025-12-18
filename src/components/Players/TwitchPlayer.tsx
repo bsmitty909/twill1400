@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useRef } from "react"; // import React, { useEffect, useRef, useState } from 'react';
 
 interface TwitchPlayerProps {
   channel?: string;

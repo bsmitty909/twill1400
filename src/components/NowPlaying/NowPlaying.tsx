@@ -1,6 +1,6 @@
 import React from 'react';
 import { useVideo } from '../../contexts/VideoContext';
-import { VideoSlot } from './VideoSlot';
+import { VideoGrid } from './VideoGrid';
 import styles from './NowPlaying.module.css';
 
 export function NowPlaying() {
@@ -52,16 +52,7 @@ export function NowPlaying() {
       </div>
 
       <div className={styles.gridContainer}>
-        <div className={styles.videoGrid}>
-          {slots.map((slot) => (
-            <VideoSlot
-              key={slot.id}
-              slot={slot}
-              isActive={audioState.activeSlot === slot.id && !audioState.muteAll}
-              onSlotClick={() => handleSlotClick(slot.id)}
-            />
-          ))}
-        </div>
+        <VideoGrid />
       </div>
     </div>
   );

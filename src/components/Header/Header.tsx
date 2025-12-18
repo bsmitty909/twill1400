@@ -42,11 +42,14 @@ export function Header() {
 
   return (
     <header className={styles.header}>
-      <img 
-        src="/twill.jpg" 
-        alt="TWill Logo" 
-        className={styles.logo}
-      />
+      <div className={styles.brandContainer}>
+        <img
+          src="/twill.jpg"
+          alt="TWill Logo"
+          className={styles.logo}
+        />
+        <h1 className={styles.brandText}>TWill the content plug</h1>
+      </div>
       <div className={styles.inputContainer}>
         <input
           type="text"

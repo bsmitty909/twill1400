@@ -7,11 +7,11 @@ import './index.css';
 function App() {
   return (
     <VideoProvider>
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        height: '100vh',
-        overflow: 'hidden'
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        overflow: 'auto'
       }}>
         <Header />
         <NowPlaying />

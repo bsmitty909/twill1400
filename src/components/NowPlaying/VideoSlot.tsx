@@ -4,6 +4,7 @@ import { YouTubePlayer } from '../Players/YouTubePlayer';
 import { TwitchPlayer } from '../Players/TwitchPlayer';
 import { KickPlayer } from '../Players/KickPlayer';
 import { useVideo } from '../../contexts/VideoContext';
+import { ErrorBoundary } from '../ErrorBoundary';
 import styles from './NowPlaying.module.css';
 
 interface VideoSlotProps {
@@ -44,26 +45,28 @@ export function VideoSlot({ slot, isActive, onSlotClick }: VideoSlotProps) {
       </button>
       
       <div className={styles.playerContainer}>
-        {slot.platform === 'youtube' && (
-          <YouTubePlayer
-            videoId={slot.videoId}
-            isMuted={isMuted}
-          />
-        )}
-        
-        {slot.platform === 'twitch' && (
-          <TwitchPlayer
-            channel={slot.videoId}
-            isMuted={isMuted}
-          />
-        )}
-        
-        {slot.platform === 'kick' && (
-          <KickPlayer
-            channel={slot.videoId}
-            isMuted={isMuted}
-          />
-        )}
+        <ErrorBoundary slotId={slot.id}>
+          {slot.platform === 'youtube' && (
+            <YouTubePlayer
+              videoId={slot.videoId}
+              isMuted={isMuted}
+            />
+          )}
+          
+          {slot.platform === 'twitch' && (
+            <TwitchPlayer
+              channel={slot.videoId}
+              isMuted={isMuted}
+            />
+          )}
+          
+          {slot.platform === 'kick' && (
+            <KickPlayer
+              channel={slot.videoId}
+              isMuted={isMuted}
+            />
+          )}
+        </ErrorBoundary>
       </div>
     </div>
   );

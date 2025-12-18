@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface KickPlayerProps {
   channel: string;
@@ -6,10 +6,17 @@ interface KickPlayerProps {
 }
 
 export function KickPlayer({ channel, isMuted }: KickPlayerProps) {
+  const [key, setKey] = useState(0);
+
+  useEffect(() => {
+    setKey(prev => prev + 1);
+  }, [isMuted]);
+
   const embedUrl = `https://player.kick.com/${channel}?muted=${isMuted ? '1' : '0'}`;
 
   return (
     <iframe
+      key={key}
       src={embedUrl}
       style={{
         width: '100%',

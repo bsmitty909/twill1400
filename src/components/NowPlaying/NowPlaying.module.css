@@ -2,9 +2,9 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1rem;
-  gap: 1rem;
-  overflow: hidden;
+  padding: 2rem;
+  gap: 1.5rem;
+  min-height: 100vh;
 }
 
 .title {
@@ -21,20 +21,24 @@
 }
 
 .muteAllButton {
-  padding: 0.5rem 1.5rem;
-  background-color: var(--accent-red);
+  padding: 0.625rem 1.75rem;
+  background: linear-gradient(135deg, var(--accent-red) 0%, var(--hover-red) 100%);
   color: var(--text-primary);
-  font-weight: bold;
-  border-radius: 4px;
+  font-weight: 600;
+  border-radius: 50px;
   font-size: 0.875rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(229, 9, 20, 0.3);
 }
 
 .muteAllButton:hover {
-  background-color: var(--hover-red);
+  box-shadow: 0 4px 16px rgba(229, 9, 20, 0.5);
+  transform: translateY(-2px);
 }
 
 .muteAllButton.muted {
-  background-color: var(--border-color);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
 .slotButtons {
@@ -44,27 +48,31 @@
 }
 
 .slotButton {
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
-  background-color: var(--bg-secondary);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-secondary);
-  font-weight: bold;
-  font-size: 0.875rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--border-color);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slotButton:hover:not(:disabled) {
-  border-color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.1);
 }
 
 .slotButton.active {
-  background-color: var(--accent-red);
+  background: linear-gradient(135deg, var(--accent-red) 0%, var(--hover-red) 100%);
   border-color: var(--accent-red);
   color: var(--text-primary);
+  box-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
 }
 
 .slotButton:disabled {
@@ -73,10 +81,10 @@
 }
 
 .gridContainer {
-  flex: 1;
+  width: 100%;
+  height: 80vh;
+  min-height: 600px;
   display: flex;
-  overflow: hidden;
-  min-height: 0;
 }
 
 .videoGrid {
@@ -89,18 +97,27 @@
 }
 
 .videoSlot {
-  background-color: var(--bg-secondary);
-  border-radius: 4px;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, #1a1a1a 100%);
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
-  border: 3px solid transparent;
-  transition: border-color 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 200px;
+  height: 100%;
+  width: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.videoSlot:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  transform: translateY(-2px);
 }
 
 .videoSlot.active {
   border-color: var(--accent-red);
-  box-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
+  box-shadow: 0 0 32px rgba(229, 9, 20, 0.6), 0 8px 24px rgba(0, 0, 0, 0.6);
 }
 
 .emptySlot {
@@ -113,28 +130,51 @@
 
 .closeButton {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  background-color: rgba(0, 0, 0, 0.7);
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
   color: white;
-  border-radius: 4px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  font-size: 1.25rem;
   z-index: 10;
-  opacity: 0.7;
-  transition: opacity 0.3s ease;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.videoSlot:hover .closeButton {
+  opacity: 1;
 }
 
 .closeButton:hover {
-  opacity: 1;
-  background-color: var(--accent-red);
+  background: var(--accent-red);
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.5);
 }
 
 .playerContainer {
   width: 100%;
   height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.playerContainer iframe,
+.playerContainer > div {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+}
+
+.playerContainer iframe {
+  display: block;
 }

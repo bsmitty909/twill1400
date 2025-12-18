@@ -1,0 +1,71 @@
+/* Split pane styling for react-split */
+.split-vertical,
+.split-horizontal {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.split-vertical {
+  flex-direction: column;
+}
+
+.split-horizontal {
+  flex-direction: row;
+}
+
+.split-vertical > div,
+.split-horizontal > div {
+  overflow: hidden;
+}
+
+/* Gutter styling for resizable dividers */
+.gutter {
+  background: rgba(255, 255, 255, 0.05);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.gutter::before {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gutter:hover {
+  background: rgba(229, 9, 20, 0.2);
+}
+
+.gutter:hover::before {
+  background: var(--accent-red);
+  box-shadow: 0 0 16px rgba(229, 9, 20, 0.6);
+}
+
+.gutter.gutter-horizontal {
+  cursor: col-resize;
+}
+
+.gutter.gutter-horizontal::before {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 40px;
+  border-radius: 3px;
+}
+
+.gutter.gutter-vertical {
+  cursor: row-resize;
+}
+
+.gutter.gutter-vertical::before {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 3px;
+  border-radius: 3px;
+}

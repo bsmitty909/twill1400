@@ -1,5 +1,5 @@
 import Split from 'react-split';
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
 import { DraggableVideoSlot } from './DraggableVideoSlot';
 import { useVideo } from '../../contexts/VideoContext';
 import './split-panes.css';
@@ -18,7 +18,7 @@ export function VideoGrid() {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = (event: any) => {
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
@@ -30,9 +30,16 @@ export function VideoGrid() {
 
   return (
     <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <div style={{ display: 'flex', height: '100%', gap: '1rem' }}>
+      <Split
+        className="split-horizontal"
+        direction="horizontal"
+        sizes={[10, 80, 10]}
+        minSize={50}
+        gutterSize={8}
+        style={{ display: 'flex', height: '100%', width: '100%' }}
+      >
         {/* Left Sidebar - 3 smaller slots */}
-        <div style={{ width: '15%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0 0.25rem', height: '100%' }}>
           {[0, 1, 2].map((slotId) => (
             <div key={slotId} style={{ flex: 1 }}>
               <DraggableVideoSlot
@@ -45,7 +52,7 @@ export function VideoGrid() {
         </div>
 
         {/* Main Stage - 2 large slots with horizontal slider */}
-        <div style={{ flex: 1 }}>
+        <div style={{ padding: '0 0.25rem', height: '100%' }}>
           <Split
             className="split-vertical"
             direction="vertical"
@@ -72,7 +79,7 @@ export function VideoGrid() {
         </div>
 
         {/* Right Sidebar - 3 smaller slots */}
-        <div style={{ width: '15%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0 0.25rem', height: '100%' }}>
           {[5, 6, 7].map((slotId) => (
             <div key={slotId} style={{ flex: 1 }}>
               <DraggableVideoSlot
@@ -83,7 +90,7 @@ export function VideoGrid() {
             </div>
           ))}
         </div>
-      </div>
+      </Split>
     </DndContext>
   );
 }

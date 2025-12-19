@@ -48,11 +48,47 @@ export function DraggableVideoSlot({ slot, isActive, onSlotClick }: DraggableVid
         setDropRef(node);
       }}
       className={`${styles.videoSlot} ${isActive ? styles.active : ''} ${isDragging ? styles.dragging : ''} ${isOver ? styles.dragOver : ''}`}
-      onClick={onSlotClick}
       {...attributes}
       {...listeners}
-      style={{ cursor: slot.platform ? 'grab' : 'default' }}
+      style={{ cursor: slot.platform ? 'move' : 'default' }}
+      onPointerDown={(e) => {
+        if (slot.platform && e.target === e.currentTarget) {
+          e.stopPropagation();
+        }
+      }}
+      onClick={(e) => {
+        if (!isDragging) {
+          onSlotClick();
+        }
+      }}
     >
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        style={{
+          position: 'absolute',
+          top: '120px',
+          left: '12px',
+          width: '32px',
+          height: '32px',
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'move',
+          zIndex: 10,
+          fontSize: '1rem',
+          color: 'white',
+          border: '2px solid rgba(255, 255, 255, 0.2)'
+        }}
+        title="Drag to move video"
+      >
+        ⋮⋮
+      </div>
+
       <button
         className={styles.closeButton}
         onClick={(e) => {

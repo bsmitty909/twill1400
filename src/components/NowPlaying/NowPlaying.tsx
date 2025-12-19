@@ -32,7 +32,7 @@ export function NowPlaying() {
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
             Audio:
           </span>
-          {slots.map((slot) => (
+          {slots.slice(0, 8).map((slot) => (
             <button
               key={slot.id}
               className={`${styles.slotButton} ${

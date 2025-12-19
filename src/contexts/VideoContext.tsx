@@ -9,6 +9,7 @@ interface VideoContextType {
   clearSlot: (slotId: number) => void;
   setActiveAudioSlot: (slotId: number | null) => void;
   toggleMuteAll: () => void;
+  swapSlots: (fromId: number, toId: number) => void;
 }
 
 const VideoContext = createContext<VideoContextType | undefined>(undefined);
@@ -19,6 +20,10 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     { id: 1, platform: null, videoId: null },
     { id: 2, platform: null, videoId: null },
     { id: 3, platform: null, videoId: null },
+    { id: 4, platform: null, videoId: null },
+    { id: 5, platform: null, videoId: null },
+    { id: 6, platform: null, videoId: null },
+    { id: 7, platform: null, videoId: null },
   ]);
 
   const [audioState, setAudioState] = useState<AudioState>({
@@ -68,6 +73,17 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const swapSlots = (fromId: number, toId: number) => {
+    setSlots(prev => {
+      const newSlots = [...prev];
+      const fromSlot = newSlots[fromId];
+      const toSlot = newSlots[toId];
+      newSlots[fromId] = { ...toSlot, id: fromId };
+      newSlots[toId] = { ...fromSlot, id: toId };
+      return newSlots;
+    });
+  };
+
   return (
     <VideoContext.Provider
       value={{
@@ -77,6 +93,7 @@ export function VideoProvider({ children }: { children: ReactNode }) {
         clearSlot,
         setActiveAudioSlot,
         toggleMuteAll,
+        swapSlots,
       }}
     >
       {children}

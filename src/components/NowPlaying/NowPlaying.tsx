@@ -17,6 +17,7 @@ import {
   BookmarkIcon,
   ChatIcon,
   CloseIcon,
+  ExternalIcon,
   FocusIcon,
   GridIcon,
   KeyboardIcon,
@@ -84,6 +85,13 @@ function ChatOption({ slot }: { slot: VideoSlot }) {
       {`${slot.id + 1}. ${PLATFORM_META[slot.platform!].name} - ${label}`}
     </option>
   );
+}
+
+/** Same chat as a standalone page (YouTube needs is_popout to render it). */
+function popoutUrl(src: string): string {
+  const url = new URL(src);
+  if (url.hostname.endsWith('youtube.com')) url.searchParams.set('is_popout', '1');
+  return url.toString();
 }
 
 function ChatPanel({ isNarrow }: { isNarrow: boolean }) {
@@ -166,12 +174,27 @@ function ChatPanel({ isNarrow }: { isNarrow: boolean }) {
         ) : (
           <span className={styles.chatTitle}>Live chat</span>
         )}
+        {src && (
+          <a
+            className={styles.chatClose}
+            href={popoutUrl(src)}
+            target="_blank"
+            rel="noopener"
+            referrerPolicy="origin"
+            aria-label="Open chat in a new window"
+            title="Pop out chat"
+          >
+            <ExternalIcon size={14} />
+          </a>
+        )}
         <button type="button" className={styles.chatClose} onClick={() => updatePrefs({ chatOpen: false })} aria-label="Close chat">
           <CloseIcon size={15} />
         </button>
       </div>
       {src ? (
-        <iframe key={src} className={styles.chatFrame} src={src} title="Live chat" />
+        // YouTube refuses to be framed without a Referer; an explicit policy
+        // overrides a tab-wide no-referrer (set when /archives was loaded).
+        <iframe key={src} className={styles.chatFrame} src={src} title="Live chat" referrerPolicy="origin" />
       ) : (
         <p className={styles.chatEmpty}>Chat is available for live YouTube, Twitch, and Kick streams. Add one to see its chat here.</p>
       )}

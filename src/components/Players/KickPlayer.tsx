@@ -19,6 +19,7 @@ export function KickPlayer({ channel, isMuted }: KickPlayerProps) {
       className="player-frame"
       allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
       allowFullScreen
+      referrerPolicy="origin"
       title={`Kick stream: ${channel}`}
     />
   );

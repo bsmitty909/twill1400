@@ -1,7 +1,24 @@
 import type { ParsedVideo, Platform } from '../types/index.ts';
 
-export function parseVideoUrl(url: string): ParsedVideo | null {
+function extractUrlFromIframe(input: string): string | null {
+  const iframeRegex = /<iframe[^>]+src=["']([^"']+)["']/i;
+  const match = input.match(iframeRegex);
+  return match ? match[1] : null;
+}
+
+export function parseVideoUrl(input: string): ParsedVideo | null {
   try {
+    let url = input.trim();
+    
+    // Check if input is iframe HTML code
+    if (url.toLowerCase().startsWith('<iframe')) {
+      const extractedUrl = extractUrlFromIframe(url);
+      if (!extractedUrl) {
+        return null;
+      }
+      url = extractedUrl;
+    }
+    
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
 
@@ -57,6 +74,15 @@ export function parseVideoUrl(url: string): ParsedVideo | null {
           isLive: true
         };
       }
+    }
+
+    // Custom iframe embed - any other URL
+    if (urlObj.hostname) {
+      return {
+        platform: 'custom',
+        videoId: url, // Store the full URL for custom embeds
+        isLive: false
+      };
     }
 
     return null;

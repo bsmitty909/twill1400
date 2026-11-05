@@ -40,7 +40,7 @@ export function VideoGrid() {
       >
         {/* Left Sidebar - 3 smaller slots */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0 0.25rem', height: '100%' }}>
-          {[0, 1, 2].map((slotId) => (
+          {[0, 3, 4].map((slotId) => (
             <div key={slotId} style={{ flex: 1 }}>
               <DraggableVideoSlot
                 slot={slots[slotId]}
@@ -51,7 +51,7 @@ export function VideoGrid() {
           ))}
         </div>
 
-        {/* Main Stage - 2 large slots with horizontal slider */}
+        {/* Main Stage - 2 large slots with horizontal slider (Slots 1 & 2) */}
         <div style={{ padding: '0 0.25rem', height: '100%' }}>
           <Split
             className="split-vertical"
@@ -63,16 +63,16 @@ export function VideoGrid() {
           >
             <div style={{ height: '100%', overflow: 'hidden' }}>
               <DraggableVideoSlot
-                slot={slots[3]}
-                isActive={audioState.activeSlot === 3 && !audioState.muteAll}
-                onSlotClick={() => handleSlotClick(3)}
+                slot={slots[1]}
+                isActive={audioState.activeSlot === 1 && !audioState.muteAll}
+                onSlotClick={() => handleSlotClick(1)}
               />
             </div>
             <div style={{ height: '100%', overflow: 'hidden' }}>
               <DraggableVideoSlot
-                slot={slots[4]}
-                isActive={audioState.activeSlot === 4 && !audioState.muteAll}
-                onSlotClick={() => handleSlotClick(4)}
+                slot={slots[2]}
+                isActive={audioState.activeSlot === 2 && !audioState.muteAll}
+                onSlotClick={() => handleSlotClick(2)}
               />
             </div>
           </Split>

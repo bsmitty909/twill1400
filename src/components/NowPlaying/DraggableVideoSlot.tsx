@@ -3,6 +3,7 @@ import type { VideoSlot as VideoSlotType } from '../../types/index.ts';
 import { YouTubePlayer } from '../Players/YouTubePlayer';
 import { TwitchPlayer } from '../Players/TwitchPlayer';
 import { KickPlayer } from '../Players/KickPlayer';
+import { CustomPlayer } from '../Players/CustomPlayer';
 import { useVideo } from '../../contexts/VideoContext';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { DownloadButton } from './DownloadButton';
@@ -56,7 +57,7 @@ export function DraggableVideoSlot({ slot, isActive, onSlotClick }: DraggableVid
           e.stopPropagation();
         }
       }}
-      onClick={(e) => {
+      onClick={() => {
         if (!isDragging) {
           onSlotClick();
         }
@@ -125,6 +126,13 @@ export function DraggableVideoSlot({ slot, isActive, onSlotClick }: DraggableVid
           {slot.platform === 'kick' && (
             <KickPlayer
               channel={slot.videoId}
+              isMuted={isMuted}
+            />
+          )}
+          
+          {slot.platform === 'custom' && (
+            <CustomPlayer
+              url={slot.videoId}
               isMuted={isMuted}
             />
           )}

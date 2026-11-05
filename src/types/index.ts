@@ -1,4 +1,4 @@
-export type Platform = 'youtube' | 'twitch' | 'kick' | null;
+export type Platform = 'youtube' | 'twitch' | 'kick' | 'custom' | null;
 
 export interface ParsedVideo {
   platform: Platform;

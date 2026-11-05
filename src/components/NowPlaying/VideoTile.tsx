@@ -11,7 +11,8 @@ import { KickPlayer } from '../Players/KickPlayer';
 import { CustomPlayer } from '../Players/CustomPlayer';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { DownloadButton } from './DownloadButton';
-import { CloseIcon, ExpandIcon, ExternalIcon, GridIcon, GripIcon, PlusIcon, SoloIcon, StarIcon, VolumeOffIcon, VolumeOnIcon } from '../Icons';
+import { VolumeControl } from './VolumeControl';
+import { CloseIcon, ExpandIcon, ExternalIcon, GridIcon, GripIcon, PlusIcon, SoloIcon, StarIcon, VolumeOnIcon } from '../Icons';
 import styles from './NowPlaying.module.css';
 
 interface VideoTileProps {
@@ -23,14 +24,14 @@ interface VideoTileProps {
   mainId?: number;
 }
 
-function Player({ slot, isMuted }: { slot: VideoSlot; isMuted: boolean }) {
+function Player({ slot, isMuted, volume }: { slot: VideoSlot; isMuted: boolean; volume: number }) {
   const { platform, videoId } = slot;
   if (!platform || !videoId) return null;
   switch (platform) {
     case 'youtube':
-      return <YouTubePlayer videoId={videoId} isMuted={isMuted} />;
+      return <YouTubePlayer videoId={videoId} isMuted={isMuted} volume={volume} />;
     case 'twitch':
-      return <TwitchPlayer source={videoId} isMuted={isMuted} />;
+      return <TwitchPlayer source={videoId} isMuted={isMuted} volume={volume} />;
     case 'kick':
       return <KickPlayer channel={videoId} isMuted={isMuted} />;
     case 'custom':
@@ -39,7 +40,7 @@ function Player({ slot, isMuted }: { slot: VideoSlot; isMuted: boolean }) {
 }
 
 export function VideoTile({ slot, compact = false, aspect = false, mainId }: VideoTileProps) {
-  const { audioSlot, clearSlot, toggleSlotAudio, swapSlots } = useVideo();
+  const { audible, volumes, clearSlot, toggleSlotAudio, swapSlots } = useVideo();
   const { showLabels, soloSlot } = usePrefs();
   const tileRef = useRef<HTMLDivElement | null>(null);
   const filled = Boolean(slot.platform && slot.videoId);
@@ -56,7 +57,7 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
     compact && styles.compact,
     aspect && styles.aspect,
     !filled && styles.empty,
-    filled && audioSlot === slot.id && styles.audible,
+    filled && audible.includes(slot.id) && styles.audible,
     isDragging && styles.dragging,
     isOver && !isDragging && styles.dropTarget,
   ]
@@ -78,7 +79,7 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
   const platform = slot.platform!;
   const videoId = slot.videoId!;
   const meta = PLATFORM_META[platform];
-  const isAudible = audioSlot === slot.id;
+  const isAudible = audible.includes(slot.id);
   const isSolo = soloSlot === slot.id;
   const canMakeMain = mainId !== undefined && mainId !== slot.id && !isSolo;
 
@@ -88,7 +89,7 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
       updatePrefs({ soloSlot: null });
       return;
     }
-    if (audioSlot !== slot.id) toggleSlotAudio(slot.id);
+    if (!isAudible) toggleSlotAudio(slot.id);
     updatePrefs({ soloSlot: slot.id, focusMode: true });
   };
 
@@ -115,7 +116,7 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
     >
       <div className={styles.player}>
         <ErrorBoundary>
-          <Player slot={slot} isMuted={!isAudible} />
+          <Player slot={slot} isMuted={!isAudible} volume={volumes[slot.id]} />
         </ErrorBoundary>
       </div>
 
@@ -164,16 +165,7 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
               <StarIcon size={14} />
             </button>
           )}
-          <button
-            type="button"
-            className={`${styles.iconButton} ${isAudible ? styles.iconActive : ''}`}
-            onClick={() => toggleSlotAudio(slot.id)}
-            aria-pressed={isAudible}
-            aria-label={isAudible ? `Mute slot ${slot.id + 1}` : `Play audio from slot ${slot.id + 1}`}
-            title={isAudible ? 'Mute' : 'Listen to this stream'}
-          >
-            {isAudible ? <VolumeOnIcon size={15} /> : <VolumeOffIcon size={15} />}
-          </button>
+          <VolumeControl slot={slot} />
           {!compact && (
             <>
               <DownloadButton platform={platform} videoId={videoId} className={styles.iconButton} />

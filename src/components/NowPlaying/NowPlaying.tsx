@@ -10,6 +10,7 @@ import type { LayoutMode, VideoSlot } from '../../types/index.ts';
 import { VideoGrid } from './VideoGrid';
 import { Welcome } from './Welcome';
 import { FocusHud } from './FocusHud';
+import { Mixer } from './VolumeControl';
 import { SetupsPanel, ShareButton, SharedSetupBanner } from './Library';
 import type { Notify } from './Library';
 import {
@@ -270,7 +271,8 @@ function CustomizePanel() {
 /* ---------------------------------------------------------- toolbar */
 
 function Toolbar({ notify }: { notify: Notify }) {
-  const { slots, filledCount, audioSlot, layout, setLayout, toggleMuteAll, toggleSlotAudio, clearAll } = useVideo();
+  const { slots, filledCount, audible, layout, setLayout, toggleMuteAll, toggleSlotAudio, clearAll } = useVideo();
+  const audioSlot = audible.length ? audible[0] : null;
   const { chatOpen } = usePrefs();
   const isNarrow = useMediaQuery('(max-width: 900px)');
   const [confirmClear, setConfirmClear] = useState(false);
@@ -318,11 +320,11 @@ function Toolbar({ notify }: { notify: Notify }) {
               <button
                 key={slot.id}
                 type="button"
-                className={`${styles.audioChip} ${audioSlot === slot.id ? styles.audioChipActive : ''}`}
+                className={`${styles.audioChip} ${audible.includes(slot.id) ? styles.audioChipActive : ''}`}
                 style={color ? { ['--platform' as string]: color } : undefined}
                 onClick={() => toggleSlotAudio(slot.id)}
                 disabled={!slot.platform}
-                aria-pressed={audioSlot === slot.id}
+                aria-pressed={audible.includes(slot.id)}
                 aria-label={`Audio from slot ${slot.id + 1}`}
                 title={slot.platform ? `Slot ${slot.id + 1} - ${PLATFORM_META[slot.platform].name} (${slot.id + 1})` : `Slot ${slot.id + 1} - empty`}
               >
@@ -331,6 +333,9 @@ function Toolbar({ notify }: { notify: Notify }) {
             );
           })}
         </div>
+        <Popover label="Mixer" icon={<SlidersIcon size={16} />}>
+          <Mixer />
+        </Popover>
       </div>
 
       <div className={`${styles.toolbarGroup} ${styles.toolbarEnd}`}>

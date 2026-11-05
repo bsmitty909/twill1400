@@ -387,7 +387,9 @@
   top: calc(100% + 8px);
   right: 0;
   z-index: 60;
-  width: 280px;
+  min-width: 280px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
   padding: 14px;
   border-radius: var(--radius);
   background: var(--surface-2);
@@ -490,6 +492,223 @@
   background: var(--surface-3);
   font: 600 0.75rem/1.5 inherit;
   text-align: center;
+}
+
+/* ---------- Volume ---------- */
+
+.volumeGroup {
+  position: relative;
+  display: flex;
+}
+
+/* Slider pops out under the speaker button on hover/focus. */
+.volumePop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 4;
+  padding: 8px 10px;
+  background: rgba(14, 16, 18, 0.97);
+  border: 1px solid var(--border-strong);
+  border-top: 2px solid var(--accent);
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s;
+}
+
+/* Invisible bridge so the pointer can travel from button to slider. */
+.volumePop::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 10px;
+}
+
+.volumeGroup:hover .volumePop,
+.volumeGroup:focus-within .volumePop {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.volumeSliderWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/*
+ * Filled track without gradients: WebKit paints the fill as a solid
+ * shadow trailing the thumb (clipped by overflow), Firefox uses
+ * ::-moz-range-progress. Selectors carry input[type='range'] so they
+ * outrank the global square-slider rules in index.css.
+ */
+input[type='range'].volumeSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 110px;
+  height: 14px;
+  background: transparent;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+input[type='range'].volumeSlider::-webkit-slider-runnable-track {
+  height: 14px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+}
+
+input[type='range'].volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 14px;
+  margin-top: -1px;
+  border-radius: 0;
+  background: #fff;
+  border: 0;
+  box-shadow: -110px 0 0 104px var(--accent);
+}
+
+input[type='range'].volumeSlider::-moz-range-track {
+  height: 12px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+}
+
+input[type='range'].volumeSlider::-moz-range-progress {
+  height: 12px;
+  background: var(--accent);
+}
+
+input[type='range'].volumeSlider::-moz-range-thumb {
+  width: 8px;
+  height: 14px;
+  border-radius: 0;
+  background: #fff;
+  border: 0;
+}
+
+input[type='range'].volumeSlider:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.volumeValue {
+  min-width: 4ch;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-align: right;
+}
+
+.volumeNote {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.mixer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 360px;
+}
+
+.mixerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mixerList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mixerRow {
+  display: grid;
+  grid-template-columns: 18px 8px minmax(0, 1fr) 28px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.mixerSlot {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.mixerName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+.mixerMute {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+
+.mixerMute:hover {
+  color: var(--text);
+}
+
+.mixerMuteOn {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent-hover);
+}
+
+.hudMixer {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 24px);
+  padding: 12px;
+  background: rgba(14, 16, 18, 0.98);
+  border: 1px solid var(--border-strong);
+  border-top: 2px solid var(--accent);
+  box-shadow: 0 0 0 1px #000, 0 16px 40px rgba(0, 0, 0, 0.7);
+}
+
+@media (max-width: 480px) {
+  .mixer {
+    min-width: 0;
+  }
+
+  .mixerRow {
+    grid-template-columns: 18px 8px minmax(0, 1fr) 28px;
+  }
+
+  .mixerRow .volumeSliderWrap,
+  .mixerRow .volumeNote {
+    grid-column: 1 / -1;
+  }
+
+  .mixerRow input[type='range'].volumeSlider {
+    flex: 1;
+    width: auto;
+  }
 }
 
 /* ---------- Focus mode ---------- */

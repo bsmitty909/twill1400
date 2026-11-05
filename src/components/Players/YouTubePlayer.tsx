@@ -6,13 +6,16 @@ import { PlayerError } from './PlayerError';
 interface YouTubePlayerProps {
   videoId: string;
   isMuted: boolean;
+  /** 0-100 */
+  volume: number;
 }
 
-export function YouTubePlayer({ videoId, isMuted }: YouTubePlayerProps) {
+export function YouTubePlayer({ videoId, isMuted, volume }: YouTubePlayerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerRef = useRef<any>(null);
   const mutedRef = useRef(isMuted);
+  const volumeRef = useRef(volume);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -32,10 +35,17 @@ export function YouTubePlayer({ videoId, isMuted }: YouTubePlayerProps) {
           playerVars: { autoplay: 1, mute: mutedRef.current ? 1 : 0, playsinline: 1, rel: 0, modestbranding: 1 },
           events: {
             onReady: (event: {
-              target: { mute(): void; unMute(): void; playVideo(): void; getVideoData?: () => { author?: string; title?: string } };
+              target: {
+                mute(): void;
+                unMute(): void;
+                playVideo(): void;
+                setVolume(v: number): void;
+                getVideoData?: () => { author?: string; title?: string };
+              };
             }) => {
               const data = event.target.getVideoData?.();
               if (data?.author) setYouTubeMeta(videoId, { author: data.author, title: data.title ?? '' });
+              event.target.setVolume(volumeRef.current);
               if (mutedRef.current) event.target.mute();
               else event.target.unMute();
               event.target.playVideo();
@@ -59,11 +69,13 @@ export function YouTubePlayer({ videoId, isMuted }: YouTubePlayerProps) {
 
   useEffect(() => {
     mutedRef.current = isMuted;
+    volumeRef.current = volume;
     const player = playerRef.current;
     if (!player || typeof player.mute !== 'function') return;
+    player.setVolume(volume);
     if (isMuted) player.mute();
     else player.unMute();
-  }, [isMuted]);
+  }, [isMuted, volume]);
 
   if (failed) return <PlayerError message="YouTube player failed to load." />;
   return <div ref={hostRef} className="player-host" />;

@@ -13,8 +13,12 @@ export type AddVideoResult =
 interface VideoContextType {
   slots: VideoSlot[];
   filledCount: number;
-  /** Slot whose audio is playing; null means everything is muted. */
+  /** Slots currently playing sound (several may mix). */
+  audible: number[];
+  /** First audible slot, or null when everything is muted. */
   audioSlot: number | null;
+  /** Per-slot volume, 0-100. */
+  volumes: number[];
   layout: LayoutMode;
   addVideo: (platform: Platform, videoId: string) => AddVideoResult;
   /** Adds several streams in one state update; results line up with input. */
@@ -23,7 +27,11 @@ interface VideoContextType {
   loadSetup: (items: { platform: Platform; videoId: string }[], layout?: LayoutMode) => void;
   clearSlot: (slotId: number) => void;
   clearAll: () => void;
+  /** "Listen only to this one": exclusive, used by the 1-8 chips and keys. */
   toggleSlotAudio: (slotId: number) => void;
+  /** Mutes/unmutes one slot without touching the others (mixing). */
+  toggleSlotMute: (slotId: number) => void;
+  setSlotVolume: (slotId: number, volume: number) => void;
   toggleMuteAll: () => void;
   swapSlots: (fromId: number, toId: number) => void;
   setLayout: (layout: LayoutMode) => void;
@@ -40,8 +48,11 @@ function emptySlots(): VideoSlot[] {
  * refresh does not wipe a carefully arranged multi-view. Anything that does
  * not validate is dropped rather than trusted.
  */
-function loadSession(): { slots: VideoSlot[]; layout: LayoutMode } {
-  const fallback = { slots: emptySlots(), layout: 'stage' as LayoutMode };
+export const DEFAULT_VOLUME = 80;
+const defaultVolumes = () => Array.from({ length: SLOT_COUNT }, () => DEFAULT_VOLUME);
+
+function loadSession(): { slots: VideoSlot[]; layout: LayoutMode; volumes: number[] } {
+  const fallback = { slots: emptySlots(), layout: 'stage' as LayoutMode, volumes: defaultVolumes() };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
@@ -53,7 +64,11 @@ function loadSession(): { slots: VideoSlot[]; layout: LayoutMode } {
     });
     const layouts: LayoutMode[] = ['stage', 'spotlight', 'theater', 'grid'];
     const layout: LayoutMode = layouts.includes(data?.layout) ? data.layout : 'stage';
-    return { slots, layout };
+    const volumes = defaultVolumes().map((v, i) => {
+      const saved = Array.isArray(data?.volumes) ? Number(data.volumes[i]) : NaN;
+      return Number.isFinite(saved) ? Math.min(100, Math.max(0, Math.round(saved))) : v;
+    });
+    return { slots, layout, volumes };
   } catch {
     return fallback;
   }
@@ -63,19 +78,20 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   const [initial] = useState(loadSession);
   const [slots, setSlots] = useState<VideoSlot[]>(initial.slots);
   const [layout, setLayout] = useState<LayoutMode>(initial.layout);
-  const [audioSlot, setAudioSlot] = useState<number | null>(null);
-  const lastAudioSlot = useRef<number | null>(null);
+  const [audible, setAudible] = useState<number[]>([]);
+  const [volumes, setVolumes] = useState<number[]>(initial.volumes);
+  const lastAudible = useRef<number[]>([]);
 
   useEffect(() => {
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ layout, slots: slots.map(({ platform, videoId }) => ({ platform, videoId })) })
+        JSON.stringify({ layout, volumes, slots: slots.map(({ platform, videoId }) => ({ platform, videoId })) })
       );
     } catch {
       // Storage unavailable (private mode, quota) - the session just won't persist.
     }
-  }, [slots, layout]);
+  }, [slots, layout, volumes]);
 
   const addVideo = useCallback(
     (platform: Platform, videoId: string): AddVideoResult => {
@@ -110,42 +126,72 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   const loadSetup = useCallback((items: { platform: Platform; videoId: string }[], nextLayout?: LayoutMode) => {
     setSlots(emptySlots().map((slot, i) => (items[i] ? { ...slot, ...items[i] } : slot)));
     if (nextLayout) setLayout(nextLayout);
-    setAudioSlot(null);
-    lastAudioSlot.current = null;
+    setAudible([]);
+    lastAudible.current = [];
   }, []);
 
   const clearSlot = useCallback((slotId: number) => {
     setSlots(prev => prev.map(s => (s.id === slotId ? { ...s, platform: null, videoId: null } : s)));
-    setAudioSlot(prev => (prev === slotId ? null : prev));
-    if (lastAudioSlot.current === slotId) lastAudioSlot.current = null;
+    setAudible(prev => prev.filter(id => id !== slotId));
+    setVolumes(prev => prev.map((v, i) => (i === slotId ? DEFAULT_VOLUME : v)));
+    lastAudible.current = lastAudible.current.filter(id => id !== slotId);
   }, []);
 
   const clearAll = useCallback(() => {
     setSlots(emptySlots());
-    setAudioSlot(null);
-    lastAudioSlot.current = null;
+    setAudible([]);
+    setVolumes(defaultVolumes());
+    lastAudible.current = [];
   }, []);
 
   const toggleSlotAudio = useCallback((slotId: number) => {
-    setAudioSlot(prev => {
-      const next = prev === slotId ? null : slotId;
-      if (next !== null) lastAudioSlot.current = next;
+    setAudible(prev => {
+      const next = prev.length === 1 && prev[0] === slotId ? [] : [slotId];
+      if (next.length) lastAudible.current = next;
       return next;
     });
   }, []);
 
+  const toggleSlotMute = useCallback((slotId: number) => {
+    setAudible(prev => {
+      const next = prev.includes(slotId) ? prev.filter(id => id !== slotId) : [...prev, slotId];
+      if (next.length) lastAudible.current = next;
+      return next;
+    });
+    // Unmuting a stream whose slider sits at 0 would stay silent; lift it.
+    setVolumes(prev => prev.map((v, i) => (i === slotId && v === 0 ? DEFAULT_VOLUME : v)));
+  }, []);
+
+  /** Moving a slider is an implicit unmute; dragging it to 0 mutes. */
+  const setSlotVolume = useCallback((slotId: number, volume: number) => {
+    const level = Math.min(100, Math.max(0, Math.round(volume)));
+    setVolumes(prev => prev.map((v, i) => (i === slotId ? level : v)));
+    setAudible(prev => {
+      const has = prev.includes(slotId);
+      if (level === 0 && has) return prev.filter(id => id !== slotId);
+      if (level > 0 && !has) {
+        const next = [...prev, slotId];
+        lastAudible.current = next;
+        return next;
+      }
+      return prev;
+    });
+  }, []);
+
   const toggleMuteAll = useCallback(() => {
-    if (audioSlot !== null) {
-      setAudioSlot(null);
+    if (audible.length) {
+      lastAudible.current = audible;
+      setAudible([]);
       return;
     }
-    const remembered = lastAudioSlot.current;
-    const target = remembered !== null && slots[remembered]?.platform ? remembered : slots.find(s => s.platform)?.id;
-    if (target !== undefined) {
-      lastAudioSlot.current = target;
-      setAudioSlot(target);
+    const remembered = lastAudible.current.filter(id => slots[id]?.platform);
+    const first = slots.find(s => s.platform)?.id;
+    const target = remembered.length ? remembered : first !== undefined ? [first] : [];
+    if (target.length) {
+      lastAudible.current = target;
+      setAudible(target);
     }
-  }, [audioSlot, slots]);
+  }, [audible, slots]);
 
   const swapSlots = useCallback((fromId: number, toId: number) => {
     setSlots(prev => {
@@ -154,16 +200,25 @@ export function VideoProvider({ children }: { children: ReactNode }) {
       next[toId] = { ...prev[fromId], id: toId };
       return next;
     });
-    const remap = (id: number | null) => (id === fromId ? toId : id === toId ? fromId : id);
-    setAudioSlot(remap);
-    lastAudioSlot.current = remap(lastAudioSlot.current);
+    // Audio state and volume follow the stream, not the slot position.
+    const remap = (id: number) => (id === fromId ? toId : id === toId ? fromId : id);
+    setAudible(prev => prev.map(remap));
+    setVolumes(prev => {
+      const next = [...prev];
+      next[fromId] = prev[toId];
+      next[toId] = prev[fromId];
+      return next;
+    });
+    lastAudible.current = lastAudible.current.map(remap);
   }, []);
 
   const value = useMemo(
     () => ({
       slots,
       filledCount: slots.filter(s => s.platform).length,
-      audioSlot,
+      audible,
+      audioSlot: audible[0] ?? null,
+      volumes,
       layout,
       addVideo,
       addVideos,
@@ -171,11 +226,13 @@ export function VideoProvider({ children }: { children: ReactNode }) {
       clearSlot,
       clearAll,
       toggleSlotAudio,
+      toggleSlotMute,
+      setSlotVolume,
       toggleMuteAll,
       swapSlots,
       setLayout,
     }),
-    [slots, audioSlot, layout, addVideo, addVideos, loadSetup, clearSlot, clearAll, toggleSlotAudio, toggleMuteAll, swapSlots]
+    [slots, audible, volumes, layout, addVideo, addVideos, loadSetup, clearSlot, clearAll, toggleSlotAudio, toggleSlotMute, setSlotVolume, toggleMuteAll, swapSlots]
   );
 
   return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;

@@ -4,6 +4,7 @@ import { useVideo } from '../../contexts/VideoContext';
 import { updatePrefs, usePrefs } from '../../hooks/usePrefs';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useStreamLabel } from '../../hooks/useStreamLabel';
+import { Mixer } from './VolumeControl';
 import { PLATFORM_META } from '../../services/urlParser';
 import type { LayoutMode, VideoSlot } from '../../types/index.ts';
 import {
@@ -12,6 +13,7 @@ import {
   GridIcon,
   MaximizeIcon,
   MinimizeIcon,
+  SlidersIcon,
   SpotlightIcon,
   StageIcon,
   TheaterIcon,
@@ -30,9 +32,9 @@ const LAYOUTS: { id: LayoutMode; label: string; Icon: typeof StageIcon }[] = [
 const IDLE_MS = 2600;
 
 function AudioChip({ slot }: { slot: VideoSlot }) {
-  const { audioSlot, toggleSlotAudio } = useVideo();
+  const { audible, toggleSlotAudio } = useVideo();
   const { label } = useStreamLabel(slot.platform!, slot.videoId!);
-  const active = audioSlot === slot.id;
+  const active = audible.includes(slot.id);
   return (
     <button
       type="button"
@@ -40,8 +42,8 @@ function AudioChip({ slot }: { slot: VideoSlot }) {
       style={{ ['--platform' as string]: PLATFORM_META[slot.platform!].color }}
       onClick={() => toggleSlotAudio(slot.id)}
       aria-pressed={active}
-      title={`${active ? 'Mute' : 'Listen to'} ${label} (${slot.id + 1})`}
-      aria-label={`${active ? 'Mute' : 'Listen to'} slot ${slot.id + 1}, ${label}`}
+      title={`Listen only to ${label} (${slot.id + 1})`}
+      aria-label={`Listen only to slot ${slot.id + 1}, ${label}`}
     >
       <span className={styles.badgeDot} />
       {slot.id + 1}
@@ -61,7 +63,9 @@ function SoloLabel({ slot }: { slot: VideoSlot }) {
  * covers the video.
  */
 export function FocusHud() {
-  const { slots, layout, setLayout, audioSlot, toggleMuteAll } = useVideo();
+  const { slots, layout, setLayout, audible, toggleMuteAll } = useVideo();
+  const audioSlot = audible.length ? audible[0] : null;
+  const [mixerOpen, setMixerOpen] = useState(false);
   const { chatOpen, soloSlot } = usePrefs();
   const isNarrow = useMediaQuery('(max-width: 900px)');
   const fullscreen = useBrowserFullscreen();
@@ -129,6 +133,11 @@ export function FocusHud() {
       }}
       onFocus={wake}
     >
+      {mixerOpen && (
+        <div className={styles.hudMixer} role="dialog" aria-label="Volume mixer">
+          <Mixer />
+        </div>
+      )}
       <div className={styles.hudSection}>
         <span className={styles.led} aria-hidden="true" />
         <span className="tag">{soloActive ? 'Solo' : 'Focus'}</span>
@@ -178,6 +187,16 @@ export function FocusHud() {
         {filled.map(slot => (
           <AudioChip key={slot.id} slot={slot} />
         ))}
+        <button
+          type="button"
+          className={`${styles.hudIcon} ${mixerOpen ? styles.hudIconActive : ''}`}
+          onClick={() => setMixerOpen(o => !o)}
+          aria-expanded={mixerOpen}
+          aria-label="Volume mixer"
+          title="Volume mixer"
+        >
+          <SlidersIcon size={16} />
+        </button>
       </div>
 
       <div className={styles.hudSection}>

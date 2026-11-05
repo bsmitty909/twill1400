@@ -91,6 +91,11 @@ export const PLATFORM_META: Record<Platform, { name: string; color: string }> = 
   custom: { name: 'Embed', color: '#8b8b98' },
 };
 
+/** Embeds whose player API exposes a volume level (others are on/off only). */
+export function supportsVolume(platform: Platform): boolean {
+  return platform === 'youtube' || platform === 'twitch';
+}
+
 export function getSlotLabel(platform: Platform, videoId: string): string {
   switch (platform) {
     case 'twitch':

@@ -6,13 +6,16 @@ interface TwitchPlayerProps {
   /** Channel name, or `videos/<id>` for a VOD. */
   source: string;
   isMuted: boolean;
+  /** 0-100 */
+  volume: number;
 }
 
-export function TwitchPlayer({ source, isMuted }: TwitchPlayerProps) {
+export function TwitchPlayer({ source, isMuted, volume }: TwitchPlayerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerRef = useRef<any>(null);
   const mutedRef = useRef(isMuted);
+  const volumeRef = useRef(volume);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -34,7 +37,10 @@ export function TwitchPlayer({ source, isMuted }: TwitchPlayerProps) {
           autoplay: true,
           ...(isVod ? { video: source.slice('videos/'.length) } : { channel: source }),
         });
-        player.addEventListener(Twitch.Player.READY, () => player.setMuted(mutedRef.current));
+        player.addEventListener(Twitch.Player.READY, () => {
+          player.setVolume(volumeRef.current / 100);
+          player.setMuted(mutedRef.current);
+        });
         playerRef.current = player;
       })
       .catch(() => !cancelled && setFailed(true));
@@ -48,8 +54,10 @@ export function TwitchPlayer({ source, isMuted }: TwitchPlayerProps) {
 
   useEffect(() => {
     mutedRef.current = isMuted;
+    volumeRef.current = volume;
+    playerRef.current?.setVolume?.(volume / 100);
     playerRef.current?.setMuted?.(isMuted);
-  }, [isMuted]);
+  }, [isMuted, volume]);
 
   if (failed) return <PlayerError message="Twitch player failed to load." />;
   return <div ref={hostRef} className="player-host" />;

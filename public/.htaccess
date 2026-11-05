@@ -33,6 +33,15 @@ Options -Indexes
     Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
     Header always set Referrer-Policy "no-referrer"
   </If>
+
+  # The host's default mod_expires adds max-age=172800/Expires to JSON;
+  # API data must never be cached, or browsers show stale archives.
+  <If "%{THE_REQUEST} =~ m#^\S+ /api/#">
+    Header always unset Expires
+    Header unset Expires
+    Header always set Cache-Control "private, no-store"
+    Header set Cache-Control "private, no-store"
+  </If>
 </IfModule>
 
 <IfModule mod_deflate.c>

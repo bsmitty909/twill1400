@@ -91,6 +91,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     response = await fetch(path, {
       credentials: 'same-origin',
+      // Never answer from the HTTP cache: the host's Apache adds long
+      // max-age/Expires headers, and a stale copy once hid live data.
+      cache: 'no-store',
       ...init,
       headers: init.body ? { 'Content-Type': 'application/json', ...init.headers } : init.headers,
     });

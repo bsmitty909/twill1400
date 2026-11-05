@@ -27,7 +27,10 @@ REMOTE_USER="$(read_env SSH_user)"
 REMOTE_HOST="$(read_env ssh_host)"
 [ -n "$SSHPASS" ] && [ -n "$REMOTE_USER" ] && [ -n "$REMOTE_HOST" ] || { echo "Missing ssh_host/SSH_user/SSH_pass in $ENV_FILE" >&2; exit 1; }
 
-SSH_OPTS="-o StrictHostKeyChecking=accept-new -o PubkeyAuthentication=no -o PreferredAuthentications=password,keyboard-interactive"
+# One multiplexed connection for every ssh/rsync step: avoids the VPS
+# throttling a burst of fresh password logins mid-deploy.
+mkdir -p "$HOME/.ssh/cm"
+SSH_OPTS="-o StrictHostKeyChecking=accept-new -o PubkeyAuthentication=no -o PreferredAuthentications=password,keyboard-interactive -o ControlMaster=auto -o ControlPath=$HOME/.ssh/cm/%C -o ControlPersist=120 -o ConnectTimeout=20"
 remote() { sshpass -e ssh $SSH_OPTS "$REMOTE_USER@$REMOTE_HOST" "$@"; }
 
 echo "Building frontend and backend..."

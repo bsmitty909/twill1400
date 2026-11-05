@@ -28,6 +28,13 @@ export interface Prefs {
 
 const KEY = 'twill:prefs:v1';
 
+/*
+ * YouTube's live_chat page will not lay out narrower than ~298px (its
+ * content overflows and gets clipped), so the chat panel stops at 320px.
+ */
+export const CHAT_MIN_WIDTH = 320;
+export const CHAT_MAX_WIDTH = 640;
+
 export const DEFAULT_SIZES: Prefs['sizes'] = {
   stageColumns: [16, 68, 16],
   stageMain: [50, 50],
@@ -64,7 +71,7 @@ function load(): Prefs {
       showLabels: typeof saved.showLabels === 'boolean' ? saved.showLabels : DEFAULTS.showLabels,
       chatOpen: typeof saved.chatOpen === 'boolean' ? saved.chatOpen : DEFAULTS.chatOpen,
       chatSlot: Number.isInteger(saved.chatSlot) ? saved.chatSlot : null,
-      chatWidth: Number.isFinite(saved.chatWidth) ? Math.min(640, Math.max(260, saved.chatWidth)) : DEFAULTS.chatWidth,
+      chatWidth: Number.isFinite(saved.chatWidth) ? Math.min(CHAT_MAX_WIDTH, Math.max(CHAT_MIN_WIDTH, saved.chatWidth)) : DEFAULTS.chatWidth,
       focusMode: false,
       sizes,
     };

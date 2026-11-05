@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { useVideo, SLOT_COUNT } from '../../contexts/VideoContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { DEFAULT_SIZES, updatePrefs, usePrefs } from '../../hooks/usePrefs';
+import { CHAT_MAX_WIDTH, CHAT_MIN_WIDTH, DEFAULT_SIZES, updatePrefs, usePrefs } from '../../hooks/usePrefs';
 import type { GridColumns } from '../../hooks/usePrefs';
 import { PLATFORM_META } from '../../services/urlParser';
 import { useStreamLabel } from '../../hooks/useStreamLabel';
@@ -90,39 +90,63 @@ function ChatPanel({ isNarrow }: { isNarrow: boolean }) {
   const selected = chattable.find(s => s.id === chatSlot) ?? chattable[0];
   const src = selected ? chatUrl(selected) : null;
 
+  /*
+   * Pointer capture keeps the drag alive while the cursor crosses the chat
+   * or video iframes (which would otherwise swallow the events), and every
+   * end path - release, cancel, lost capture - clears the drag state so the
+   * embeds never stay unclickable.
+   */
   const startResize = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
     e.preventDefault();
+    const handle = e.currentTarget;
     const startX = e.clientX;
     const startWidth = chatWidth;
+    let frame = 0;
+    handle.setPointerCapture(e.pointerId);
     document.documentElement.classList.add('is-dragging');
+
     const onMove = (ev: PointerEvent) => {
-      updatePrefs({ chatWidth: Math.min(640, Math.max(260, startWidth + (startX - ev.clientX))) });
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() =>
+        updatePrefs({ chatWidth: Math.min(CHAT_MAX_WIDTH, Math.max(CHAT_MIN_WIDTH, startWidth + (startX - ev.clientX))) })
+      );
     };
-    const onUp = () => {
+    const onEnd = () => {
       document.documentElement.classList.remove('is-dragging');
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onEnd);
+      handle.removeEventListener('pointercancel', onEnd);
+      handle.removeEventListener('lostpointercapture', onEnd);
     };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onEnd);
+    handle.addEventListener('pointercancel', onEnd);
+    handle.addEventListener('lostpointercapture', onEnd);
   };
 
   return (
-    <aside className={styles.chat} style={isNarrow ? undefined : { width: chatWidth }} aria-label="Live chat">
+    <>
       {!isNarrow && (
         <div
-          className={styles.chatHandle}
+          className={styles.chatResizer}
           onPointerDown={startResize}
+          onDoubleClick={() => updatePrefs({ chatWidth: 340 })}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize chat"
+          aria-valuemin={CHAT_MIN_WIDTH}
+          aria-valuemax={CHAT_MAX_WIDTH}
+          aria-valuenow={chatWidth}
+          title="Drag to resize chat (double-click to reset)"
           tabIndex={0}
           onKeyDown={e => {
-            if (e.key === 'ArrowLeft') updatePrefs({ chatWidth: Math.min(640, chatWidth + 20) });
-            if (e.key === 'ArrowRight') updatePrefs({ chatWidth: Math.max(260, chatWidth - 20) });
+            if (e.key === 'ArrowLeft') updatePrefs({ chatWidth: Math.min(CHAT_MAX_WIDTH, chatWidth + 20) });
+            if (e.key === 'ArrowRight') updatePrefs({ chatWidth: Math.max(CHAT_MIN_WIDTH, chatWidth - 20) });
           }}
         />
       )}
+    <aside className={styles.chat} style={isNarrow ? undefined : { width: chatWidth }} aria-label="Live chat">
       <div className={styles.chatHeader}>
         <ChatIcon size={15} />
         {chattable.length > 0 ? (
@@ -149,6 +173,7 @@ function ChatPanel({ isNarrow }: { isNarrow: boolean }) {
         <p className={styles.chatEmpty}>Chat is available for live YouTube, Twitch, and Kick streams. Add one to see its chat here.</p>
       )}
     </aside>
+    </>
   );
 }
 

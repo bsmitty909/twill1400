@@ -271,32 +271,54 @@
   height: min(70vh, 520px);
 }
 
-.chatHandle {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 8px;
+/* Chat resizer: a real gutter between the streams and the chat panel. */
+.chatResizer {
+  position: relative;
+  flex: 0 0 14px;
+  margin-inline: calc(var(--gutter) / -2);
   cursor: col-resize;
+  touch-action: none;
   z-index: 3;
 }
 
-.chatHandle::before {
+.chatResizer::before {
   content: '';
   position: absolute;
-  left: 2px;
-  top: 50%;
-  width: 3px;
-  height: 44px;
-  transform: translateY(-50%);
-  border-radius: 2px;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
   background: var(--border-strong);
   transition: background 0.15s;
 }
 
-.chatHandle:hover::before,
-.chatHandle:focus-visible::before {
+.chatResizer::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  background: var(--surface-3);
+  border: 1px solid var(--text-dim);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.chatResizer:hover::before,
+.chatResizer:focus-visible::before,
+.is-dragging .chatResizer::before {
   background: var(--accent);
+}
+
+.chatResizer:hover::after,
+.chatResizer:focus-visible::after {
+  background: var(--accent);
+  border-color: var(--accent-hover);
+}
+
+.chatResizer:focus-visible {
+  outline: none;
 }
 
 .chatHeader {

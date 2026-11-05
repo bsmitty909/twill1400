@@ -187,7 +187,7 @@ export function targetReady(): boolean {
 
 function waitingMessage(): string {
   return config.archiveTarget === 's3'
-    ? 'Waiting for DreamObjects storage to be configured.'
+    ? 'Waiting for storage to be set up.'
     : 'Waiting for a YouTube account to be connected.';
 }
 

@@ -5,7 +5,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { config } from '../config';
 
 /*
- * DreamObjects (S3-compatible) archive storage. The bucket stays private:
+ * S3-compatible archive storage (DreamObjects). Provider and bucket names
+ * are server-side only and never sent to the browser. The bucket stays private:
  * the browser only ever receives short-lived presigned URLs, minted for
  * signed-in Archives users.
  */

@@ -584,14 +584,12 @@ function StorageCard() {
         <div className={styles.channelBody}>
           <h2 className={styles.panelTitle}>Storage</h2>
           {!info.configured ? (
-            <p className={styles.muted}>DreamObjects is not configured on the server. Recordings wait on the server until it is.</p>
+            <p className={styles.muted}>Storage is not set up on the server yet. Recordings wait on the server until it is.</p>
           ) : info.error ? (
-            <p className={styles.rowError}>
-              {info.error} Check the bucket name and that the access keys belong to the same DreamObjects user. Recordings wait on the server and can be retried.
-            </p>
+            <p className={styles.rowError}>Storage is unreachable right now. Recordings wait on the server and can be retried.</p>
           ) : (
             <p className={styles.muted}>
-              Private DreamObjects bucket <strong className={styles.strong}>{info.bucket}</strong>
+              Private storage
               {info.retentionDays ? ` · recordings are kept for ${info.retentionDays} days` : ' · recordings are kept until deleted'}
             </p>
           )}

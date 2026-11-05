@@ -69,7 +69,6 @@ export interface YouTubeConnection {
 export interface StorageInfo {
   target: 's3' | 'youtube';
   configured: boolean;
-  bucket: string | null;
   retentionDays: number;
   error: string | null;
 }

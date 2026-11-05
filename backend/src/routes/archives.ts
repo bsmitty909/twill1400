@@ -11,10 +11,17 @@ import { youtubeConfigured } from '../services/youtubeAccount';
 
 const router = Router();
 
+/** Storage-provider errors can name the bucket/provider; never show them. */
+function publicError(error: string | null): string | null {
+  if (!error) return null;
+  return /bucket|s3|dreamobjects|backblaze|access ?key/i.test(error) ? 'Upload to storage failed. Use Retry to try again.' : error;
+}
+
 function publicRecording(r: ReturnType<typeof store.recordings>[number]) {
   const { filePath, pid, uploadUrl, storageKey, thumbnailKey, ...rest } = r;
   return {
     ...rest,
+    error: publicError(r.error),
     storage: r.storage ?? (r.youtubeVideoId ? 'youtube' : null),
     hasLocalFile: Boolean(filePath),
     hasMedia: Boolean(storageKey),
@@ -35,9 +42,9 @@ router.get('/storage', async (_req: Request, res: Response) => {
   res.json({
     target: config.archiveTarget,
     configured: storageConfigured(),
-    bucket: config.s3.bucket || null,
     retentionDays: config.retentionDays,
-    error: storageConfigured() ? await checkBucket() : null,
+    // Provider details stay server-side; the UI only needs reachability.
+    error: storageConfigured() && (await checkBucket()) ? 'unreachable' : null,
   });
 });
 

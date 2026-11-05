@@ -808,9 +808,9 @@ export function ArchivesPage() {
               </span>
             </>
           )}
-          <button type="button" className={styles.ghostButton} onClick={logout}>
+          <button type="button" className={styles.ghostButton} onClick={logout} title="Log out of Archives on this browser">
             <LogoutIcon size={15} />
-            <span>Lock</span>
+            <span>Log out</span>
           </button>
         </div>
       </div>

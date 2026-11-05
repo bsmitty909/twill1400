@@ -8,9 +8,11 @@
   --text: #f4f4f6;
   --text-muted: #a1a1ad;
   --text-dim: #6c6c78;
-  --accent: #e50914;
-  --accent-hover: #ff2430;
-  --accent-soft: rgba(229, 9, 20, 0.14);
+  --accent-rgb: 37, 99, 235;
+  --accent: #2563eb;
+  --accent-hover: #3b82f6;
+  --accent-text: #60a5fa;
+  --accent-soft: rgba(var(--accent-rgb), 0.16);
   --success: #22c55e;
   --danger: #f87171;
 
@@ -78,6 +80,11 @@ button:disabled {
 img {
   max-width: 100%;
   display: block;
+}
+
+/* Focus mode: only the streams remain on screen. */
+.focus-mode body > #root > div > header {
+  display: none;
 }
 
 /* Iframes swallow pointer events, which breaks drag tracking mid-drag. */

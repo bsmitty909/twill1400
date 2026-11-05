@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { usePrefs } from '../../hooks/usePrefs';
 import type { VideoSlot } from '../../types/index.ts';
 import { useVideo } from '../../contexts/VideoContext';
 import { getSlotLabel, getSourceUrl, PLATFORM_META } from '../../services/urlParser';
@@ -8,7 +10,7 @@ import { KickPlayer } from '../Players/KickPlayer';
 import { CustomPlayer } from '../Players/CustomPlayer';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { DownloadButton } from './DownloadButton';
-import { CloseIcon, ExternalIcon, GripIcon, PlusIcon, VolumeOffIcon, VolumeOnIcon } from '../Icons';
+import { CloseIcon, ExpandIcon, ExternalIcon, GripIcon, PlusIcon, StarIcon, VolumeOffIcon, VolumeOnIcon } from '../Icons';
 import styles from './NowPlaying.module.css';
 
 interface VideoTileProps {
@@ -16,6 +18,8 @@ interface VideoTileProps {
   compact?: boolean;
   /** Fixed 16:9 box (stacked/grid layouts) instead of filling its container. */
   aspect?: boolean;
+  /** Slot currently in the main position; other tiles offer "Make main". */
+  mainId?: number;
 }
 
 function Player({ slot, isMuted }: { slot: VideoSlot; isMuted: boolean }) {
@@ -33,8 +37,10 @@ function Player({ slot, isMuted }: { slot: VideoSlot; isMuted: boolean }) {
   }
 }
 
-export function VideoTile({ slot, compact = false, aspect = false }: VideoTileProps) {
-  const { audioSlot, clearSlot, toggleSlotAudio } = useVideo();
+export function VideoTile({ slot, compact = false, aspect = false, mainId }: VideoTileProps) {
+  const { audioSlot, clearSlot, toggleSlotAudio, swapSlots } = useVideo();
+  const { showLabels } = usePrefs();
+  const tileRef = useRef<HTMLDivElement | null>(null);
   const filled = Boolean(slot.platform && slot.videoId);
 
   const { attributes, listeners, setNodeRef: setDragRef, setActivatorNodeRef, isDragging } = useDraggable({
@@ -72,12 +78,25 @@ export function VideoTile({ slot, compact = false, aspect = false }: VideoTilePr
   const meta = PLATFORM_META[platform];
   const isAudible = audioSlot === slot.id;
   const label = getSlotLabel(platform, videoId);
+  const canMakeMain = mainId !== undefined && mainId !== slot.id;
+
+  function toggleFullscreen() {
+    const el = tileRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void el.requestFullscreen?.().catch(() => undefined);
+  }
 
   return (
     <div
       ref={node => {
+        tileRef.current = node;
         setDragRef(node);
         setDropRef(node);
+      }}
+      onDoubleClick={e => {
+        if ((e.target as HTMLElement).closest('button, a')) return;
+        toggleFullscreen();
       }}
       className={classes}
       style={{ ['--platform' as string]: meta.color }}
@@ -103,15 +122,26 @@ export function VideoTile({ slot, compact = false, aspect = false }: VideoTilePr
           </button>
           <span className={styles.badge}>
             <span className={styles.badgeDot} />
-            {!compact && <span className={styles.badgeText}>{meta.name}</span>}
+            {!compact && showLabels && <span className={styles.badgeText}>{meta.name}</span>}
           </span>
-          {!compact && (
+          {!compact && showLabels && (
             <span className={styles.label} title={label}>
               {label}
             </span>
           )}
         </div>
         <div className={styles.overlayRight}>
+          {canMakeMain && (
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={() => swapSlots(slot.id, mainId!)}
+              aria-label={`Make slot ${slot.id + 1} the main stream`}
+              title="Make main stream"
+            >
+              <StarIcon size={14} />
+            </button>
+          )}
           <button
             type="button"
             className={`${styles.iconButton} ${isAudible ? styles.iconActive : ''}`}
@@ -125,6 +155,15 @@ export function VideoTile({ slot, compact = false, aspect = false }: VideoTilePr
           {!compact && (
             <>
               <DownloadButton platform={platform} videoId={videoId} className={styles.iconButton} />
+              <button
+                type="button"
+                className={styles.iconButton}
+                onClick={toggleFullscreen}
+                aria-label={`Fullscreen slot ${slot.id + 1}`}
+                title="Fullscreen (double-click)"
+              >
+                <ExpandIcon size={14} />
+              </button>
               <a
                 className={styles.iconButton}
                 href={getSourceUrl(platform, videoId)}

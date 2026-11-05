@@ -7,11 +7,15 @@ Live: https://twill1400.com
 ## Features
 
 - **8 slots** - YouTube videos/lives/shorts, Twitch channels and VODs (`/videos/<id>`), Kick channels, and any other URL or pasted `<iframe>` embed code
-- **Layouts** - *Stage* (2 resizable main tiles + two 3-tile rails, divider sizes remembered) and *Grid* (auto-fit for the number of streams); phones/tablets (< 900px) get a stacked 16:9 list
+- **Phones/tablets** (< 900px) get a stacked 16:9 list
 - **Audio** - exactly one stream is audible; pick it with a tile's speaker icon or the 1-8 chips in the toolbar; "Mute all" remembers the last source
 - **Arrange** - drag a tile by its grip onto another slot to swap them
 - **Session persistence** - streams and layout survive a reload (localStorage)
-- **Keyboard** - `/` focuses the URL bar, Enter adds
+- **Layouts** - Stage, Spotlight, Theater, Grid (column count selectable); every divider resizes live and is remembered per layout; "make main" and per-tile fullscreen (double-click)
+- **Live chat** - resizable side panel showing YouTube, Twitch, or Kick chat for any slot
+- **Customize** - tile spacing, stream labels, reset pane sizes; **Focus mode** hides everything but the streams
+- **Keyboard** - `1-8` audio, `M` mute, `L` next layout, `C` chat, `F` focus, `Esc` exit focus, `/` URL bar
+- **Archives** (`/archives`, password protected) - add YouTube channels; when one goes live it is recorded automatically with yt-dlp, uploaded unlisted to a dedicated YouTube channel, and listed here to play or add to the viewer
 
 ## Development
 
@@ -20,6 +24,10 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build    # type-check + production build to dist/
 npm run lint
+
+# Backend (Archives) - needs yt-dlp + ffmpeg on PATH
+cd backend && npm install && npm run build
+ARCHIVE_PASSWORD_HASH=... SESSION_SECRET=... node dist/server.js   # :38411, Vite proxies /api
 ```
 
 ## Project structure
@@ -35,7 +43,10 @@ src/
 ├── services/urlParser.ts       # URL -> platform/id, labels, source links
 ├── services/scriptLoader.ts    # one-time YouTube/Twitch SDK loading
 └── index.css                   # design tokens
-backend/                         # optional yt-dlp -> S3 download service
+backend/                         # Archives API + recorder (Express, yt-dlp, YouTube Data API)
+├── src/services/recorder.ts     # poll -> record -> remux -> upload queue
+├── src/services/youtube.ts      # resumable uploads, OAuth refresh
+└── deploy/                      # run.sh + crontab for the VPS
 ```
 
 ## Deployment

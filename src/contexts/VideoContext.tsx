@@ -47,7 +47,8 @@ function loadSession(): { slots: VideoSlot[]; layout: LayoutMode } {
       const valid = saved && PLATFORMS.includes(saved.platform) && typeof saved.videoId === 'string' && saved.videoId;
       return valid ? { ...slot, platform: saved.platform, videoId: saved.videoId } : slot;
     });
-    const layout: LayoutMode = data?.layout === 'grid' ? 'grid' : 'stage';
+    const layouts: LayoutMode[] = ['stage', 'spotlight', 'theater', 'grid'];
+    const layout: LayoutMode = layouts.includes(data?.layout) ? data.layout : 'stage';
     return { slots, layout };
   } catch {
     return fallback;

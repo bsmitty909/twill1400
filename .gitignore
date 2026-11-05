@@ -35,3 +35,6 @@ tmp/
 # Secrets
 .env*
 !.env.example
+backend/temp/
+backend/data/
+backend/recordings/

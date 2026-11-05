@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useVideo, SLOT_COUNT } from '../../contexts/VideoContext';
 import { parseVideoUrl, PLATFORM_META } from '../../services/urlParser';
-import { LinkIcon, PlusIcon } from '../Icons';
+import { ArchiveIcon, LinkIcon, LockIcon, PlusIcon, TvIcon } from '../Icons';
+import { navigate, useRoute } from '../../hooks/useRoute';
 import styles from './Header.module.css';
 
 type Feedback = { tone: 'error' | 'success'; text: string } | null;
 
 export function Header() {
+  const route = useRoute();
   const [url, setUrl] = useState('');
   const [feedback, setFeedback] = useState<Feedback>(null);
   const { addVideo, filledCount } = useVideo();
@@ -24,7 +26,7 @@ export function Header() {
   useEffect(() => {
     const focusOnSlash = (e: KeyboardEvent) => {
       const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
-      if (e.key === '/' && !typing) {
+      if (e.key === '/' && !typing && inputRef.current) {
         e.preventDefault();
         inputRef.current?.focus();
       }
@@ -62,7 +64,15 @@ export function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <a className={styles.brand} href="/" aria-label="TWill home">
+        <a
+          className={styles.brand}
+          href="/"
+          aria-label="TWill home"
+          onClick={e => {
+            e.preventDefault();
+            navigate('watch');
+          }}
+        >
           <img src="/twill.jpg" alt="" className={styles.logo} width={36} height={36} />
           <span className={styles.wordmark}>
             <span className={styles.name}>TWill</span>
@@ -70,6 +80,35 @@ export function Header() {
           </span>
         </a>
 
+        <nav className={styles.tabs} aria-label="Sections">
+          <a
+            href="/"
+            className={`${styles.tab} ${route === 'watch' ? styles.tabActive : ''}`}
+            aria-current={route === 'watch' ? 'page' : undefined}
+            onClick={e => {
+              e.preventDefault();
+              navigate('watch');
+            }}
+          >
+            <TvIcon size={15} />
+            <span>Watch</span>
+          </a>
+          <a
+            href="/archives"
+            className={`${styles.tab} ${route === 'archives' ? styles.tabActive : ''}`}
+            aria-current={route === 'archives' ? 'page' : undefined}
+            onClick={e => {
+              e.preventDefault();
+              navigate('archives');
+            }}
+          >
+            <ArchiveIcon size={15} />
+            <span>Archives</span>
+            <LockIcon size={11} className={styles.tabLock} />
+          </a>
+        </nav>
+
+        {route === 'watch' && (
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <label htmlFor="stream-url" className={styles.srOnly}>
             Stream or video URL
@@ -110,6 +149,7 @@ export function Header() {
             {feedback?.text}
           </div>
         </form>
+        )}
       </div>
     </header>
   );

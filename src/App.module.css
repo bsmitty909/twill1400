@@ -4,9 +4,25 @@
   min-height: 100dvh;
 }
 
+.view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* On desktop the player area fills the window exactly; below that it scrolls. */
 @media (min-width: 901px) and (min-height: 560px) {
   .app {
     height: 100dvh;
   }
+}
+
+/* Archives is a normal scrolling page, not a fixed-height player. */
+.app.scroll {
+  height: auto;
+}
+
+.view[hidden] {
+  display: none;
 }

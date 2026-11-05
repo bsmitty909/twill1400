@@ -1,5 +1,17 @@
 Options -Indexes
 
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # API -> TWill backend (Node, bound to localhost on this VPS).
+  RewriteRule ^api/(.*)$ http://127.0.0.1:38411/api/$1 [P,L]
+
+  # Client-side routes (e.g. /archives) are served by the SPA.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^archives/?$ index.html [L]
+</IfModule>
+
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"

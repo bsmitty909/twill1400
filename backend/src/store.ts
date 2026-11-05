@@ -42,6 +42,8 @@ export interface Recording {
   storage?: 's3' | 'youtube' | null;
   storageKey?: string | null;
   thumbnailKey?: string | null;
+  /** User-assigned labels for organizing the archive. */
+  tags?: string[];
   error: string | null;
 }
 

@@ -21,6 +21,7 @@ function publicRecording(r: ReturnType<typeof store.recordings>[number]) {
   const { filePath, pid, uploadUrl, storageKey, thumbnailKey, ...rest } = r;
   return {
     ...rest,
+    tags: r.tags ?? [],
     error: publicError(r.error),
     storage: r.storage ?? (r.youtubeVideoId ? 'youtube' : null),
     hasLocalFile: Boolean(filePath),
@@ -101,6 +102,33 @@ router.delete('/channels/:id', (req: Request, res: Response) => {
   }
   store.removeChannel(channel.id);
   res.json({ ok: true });
+});
+
+const MAX_TAGS = 20;
+const MAX_TAG_LENGTH = 32;
+
+/** Trims, collapses whitespace, drops empties, de-dupes case-insensitively. */
+function normalizeTags(input: unknown): string[] | null {
+  if (!Array.isArray(input) || input.some(t => typeof t !== 'string')) return null;
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const raw of input as string[]) {
+    const tag = raw.replace(/\s+/g, ' ').trim().slice(0, MAX_TAG_LENGTH);
+    const key = tag.toLowerCase();
+    if (!tag || seen.has(key)) continue;
+    seen.add(key);
+    tags.push(tag);
+  }
+  return tags.length > MAX_TAGS ? null : tags;
+}
+
+router.patch('/recordings/:id', (req: Request, res: Response) => {
+  const recording = store.recording(req.params.id);
+  if (!recording) return res.status(404).json({ error: 'Recording not found.' });
+  const tags = normalizeTags(req.body?.tags);
+  if (!tags) return res.status(400).json({ error: `Tags must be a list of up to ${MAX_TAGS} labels.` });
+  const updated = store.updateRecording(recording.id, { tags });
+  res.json({ recording: publicRecording(updated!) });
 });
 
 router.post('/recordings/:id/stop', (req: Request, res: Response) => {

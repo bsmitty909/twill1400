@@ -5,6 +5,7 @@ import type { ArchiveChannel, ArchiveRecording, ArchiveStatus, StorageInfo, YouT
 import { useVideo } from '../../contexts/VideoContext';
 import { navigate } from '../../hooks/useRoute';
 import { formatBytes, formatDate, formatDuration, timeAgo } from './format';
+import { TagEditor, TAG_SUGGESTIONS_ID } from './TagEditor';
 import {
   AlertIcon,
   ArchiveIcon,
@@ -288,11 +289,15 @@ function RecordingCard({
   now,
   act,
   onPlay,
+  activeTag,
+  onFilterTag,
 }: {
   recording: ArchiveRecording;
   now: number;
   act: (fn: () => Promise<unknown>, success?: string) => Promise<void>;
   onPlay: (r: ArchiveRecording) => void;
+  activeTag: string | null;
+  onFilterTag: (tag: string) => void;
 }) {
   const { addVideo } = useVideo();
   const inStorage = recording.status === 'uploaded' && recording.hasMedia;
@@ -365,6 +370,7 @@ function RecordingCard({
             </span>
           )}
         </div>
+        <TagEditor recording={recording} activeTag={activeTag} onFilter={onFilterTag} act={act} />
         {recording.status === 'uploading' && (
           <div className={styles.progress} aria-hidden="true">
             <span style={{ width: `${Math.round((recording.uploadProgress ?? 0) * 100)}%` }} />
@@ -449,6 +455,7 @@ function RecordingsPanel({
   act: (fn: () => Promise<unknown>, success?: string) => Promise<void>;
 }) {
   const [channelFilter, setChannelFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [playing, setPlaying] = useState<ArchiveRecording | null>(null);
 
@@ -459,11 +466,31 @@ function RecordingsPanel({
     return [...names.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [recordings, channels]);
 
+  /** Every tag in the archive with its count, most used first. */
+  const allTags = useMemo(() => {
+    const counts = new Map<string, { tag: string; count: number }>();
+    for (const r of recordings) {
+      for (const tag of r.tags) {
+        const key = tag.toLowerCase();
+        counts.set(key, { tag: counts.get(key)?.tag ?? tag, count: (counts.get(key)?.count ?? 0) + 1 });
+      }
+    }
+    return [...counts.values()].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  }, [recordings]);
+
   const visible = recordings.filter(r => {
     if (channelFilter !== 'all' && r.channelId !== channelFilter) return false;
-    const q = query.trim().toLowerCase();
-    return !q || r.sourceTitle.toLowerCase().includes(q) || r.channelName.toLowerCase().includes(q);
+    if (tagFilter && !r.tags.some(t => t.toLowerCase() === tagFilter.toLowerCase())) return false;
+    const q = query.trim().toLowerCase().replace(/^#/, '');
+    return (
+      !q ||
+      r.sourceTitle.toLowerCase().includes(q) ||
+      r.channelName.toLowerCase().includes(q) ||
+      r.tags.some(t => t.toLowerCase().includes(q))
+    );
   });
+
+  const toggleTagFilter = (tag: string) => setTagFilter(prev => (prev?.toLowerCase() === tag.toLowerCase() ? null : tag));
 
   return (
     <section className={`${styles.panel} frame`}>
@@ -483,16 +510,46 @@ function RecordingsPanel({
               </option>
             ))}
           </select>
+          {allTags.length > 0 && (
+            <select
+              className={styles.select}
+              value={tagFilter ?? ''}
+              onChange={e => setTagFilter(e.target.value || null)}
+              aria-label="Filter by tag"
+            >
+              <option value="">All tags</option>
+              {allTags.map(({ tag, count }) => (
+                <option key={tag} value={tag}>
+                  #{tag} ({count})
+                </option>
+              ))}
+            </select>
+          )}
           <input
             className={`${styles.input} ${styles.search}`}
             type="search"
-            placeholder="Search titles"
+            placeholder="Search titles, tags"
             value={query}
             onChange={e => setQuery(e.target.value)}
             aria-label="Search recordings"
           />
         </div>
       </header>
+
+      <datalist id={TAG_SUGGESTIONS_ID}>
+        {allTags.map(({ tag }) => (
+          <option key={tag} value={tag} />
+        ))}
+      </datalist>
+
+      {tagFilter && (
+        <p className={styles.activeFilter}>
+          Showing <strong>#{tagFilter}</strong>
+          <button type="button" className={styles.linkClear} onClick={() => setTagFilter(null)}>
+            Clear
+          </button>
+        </p>
+      )}
 
       {visible.length === 0 ? (
         <p className={styles.empty}>
@@ -501,7 +558,15 @@ function RecordingsPanel({
       ) : (
         <ul className={styles.recordingList}>
           {visible.map(r => (
-            <RecordingCard key={r.id} recording={r} now={now} act={act} onPlay={setPlaying} />
+            <RecordingCard
+              key={r.id}
+              recording={r}
+              now={now}
+              act={act}
+              onPlay={setPlaying}
+              activeTag={tagFilter}
+              onFilterTag={toggleTagFilter}
+            />
           ))}
         </ul>
       )}

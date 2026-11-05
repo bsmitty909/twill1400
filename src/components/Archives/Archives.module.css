@@ -646,6 +646,112 @@
   padding-top: 10px;
 }
 
+/* ---------- Tags ---------- */
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+
+.tagActive {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tagName {
+  padding: 2px 4px 2px 7px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent-text);
+}
+
+.tagName:hover {
+  color: var(--text);
+}
+
+.tagRemove {
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  color: var(--text-dim);
+}
+
+.tagRemove:hover {
+  color: var(--danger);
+}
+
+.tagAdd {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px dashed var(--border-strong);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tagAdd:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+.tagForm {
+  display: inline-flex;
+}
+
+.tagInput {
+  width: 160px;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.tagInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.activeFilter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.activeFilter strong {
+  color: var(--accent-text);
+}
+
+.linkClear {
+  color: var(--text-muted);
+  text-decoration: underline;
+  font-size: 0.72rem;
+}
+
+.linkClear:hover {
+  color: var(--text);
+}
+
 /* ---------- Login ---------- */
 
 .loginWrap {

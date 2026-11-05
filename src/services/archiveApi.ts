@@ -36,6 +36,7 @@ export interface ArchiveRecording {
   hasMedia: boolean;
   hasThumbnail: boolean;
   expiresAt: string | null;
+  tags: string[];
 }
 
 export interface ArchiveStatus {
@@ -129,6 +130,11 @@ export const archiveApi = {
   youtube: () => request<YouTubeConnection>('/api/archives/youtube'),
   connectYouTube: () => post<{ url: string }>('/api/archives/youtube/connect'),
   disconnectYouTube: () => request<{ ok: true }>('/api/archives/youtube', { method: 'DELETE' }),
+  setTags: (id: string, tags: string[]) =>
+    request<{ recording: ArchiveRecording }>(`/api/archives/recordings/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ tags }),
+    }),
   deleteRecording: (id: string) =>
     request<{ ok: true }>(`/api/archives/recordings/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };

@@ -1,31 +1,26 @@
-import { useState, useEffect } from 'react';
-
 interface CustomPlayerProps {
   url: string;
   isMuted: boolean;
 }
 
+/*
+ * Arbitrary embeds expose no audio API. A `muted=1` query param is the
+ * de-facto convention many players honour, so it is toggled on the src.
+ */
 export function CustomPlayer({ url, isMuted }: CustomPlayerProps) {
-  const [key, setKey] = useState(0);
-
-  useEffect(() => {
-    setKey(prev => prev + 1);
-  }, [isMuted]);
-
-  const embedUrl = isMuted ? `${url}${url.includes('?') ? '&' : '?'}muted=1` : url;
+  const src = new URL(url);
+  if (isMuted) src.searchParams.set('muted', '1');
+  else src.searchParams.delete('muted');
 
   return (
     <iframe
-      key={key}
-      src={embedUrl}
-      style={{
-        width: '100%',
-        height: '100%',
-        border: 'none',
-      }}
+      key={src.toString()}
+      src={src.toString()}
+      className="player-frame"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
       allowFullScreen
-      title={`Custom stream: ${url}`}
+      referrerPolicy="strict-origin-when-cross-origin"
+      title={`Embedded stream: ${src.hostname}`}
     />
   );
 }

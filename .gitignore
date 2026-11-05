@@ -27,3 +27,11 @@ dist-ssr
 backend/.env
 backend/dist
 backend/node_modules
+
+# Scratch
+tmp/
+!tmp/.keep
+
+# Secrets
+.env*
+!.env.example

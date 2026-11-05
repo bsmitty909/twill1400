@@ -1,19 +1,18 @@
-export type Platform = 'youtube' | 'twitch' | 'kick' | 'custom' | null;
+export type Platform = 'youtube' | 'twitch' | 'kick' | 'custom';
 
 export interface ParsedVideo {
   platform: Platform;
+  /**
+   * YouTube video id, Twitch channel (or `videos/<id>` for a VOD), Kick
+   * channel, or the full embed URL for custom sources.
+   */
   videoId: string;
-  isLive?: boolean;
 }
 
 export interface VideoSlot {
   id: number;
-  platform: Platform;
+  platform: Platform | null;
   videoId: string | null;
-  playerRef?: any;
 }
 
-export interface AudioState {
-  activeSlot: number | null;
-  muteAll: boolean;
-}
+export type LayoutMode = 'stage' | 'grid';

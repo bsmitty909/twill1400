@@ -1,88 +1,47 @@
 import { useState } from 'react';
-import styles from './DownloadButton.module.css';
+import type { Platform } from '../../types/index.ts';
+import { getSourceUrl } from '../../services/urlParser';
+import { DownloadIcon } from '../Icons';
+
+/*
+ * Cloud download relies on the yt-dlp backend in backend/. It is only shown
+ * when the build is pointed at a running backend via VITE_API_URL; without
+ * it the button would just fail for every visitor.
+ */
+const API_URL: string | undefined = import.meta.env.VITE_API_URL;
 
 interface DownloadButtonProps {
-  platform: string;
+  platform: Platform;
   videoId: string;
-  slotId: number;
+  className: string;
 }
 
-export function DownloadButton({ platform, videoId }: DownloadButtonProps) {
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle');
-  const [message, setMessage] = useState('');
+export function DownloadButton({ platform, videoId, className }: DownloadButtonProps) {
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
 
-  const getVideoUrl = () => {
-    switch (platform) {
-      case 'youtube':
-        return `https://www.youtube.com/watch?v=${videoId}`;
-      case 'twitch':
-        return `https://www.twitch.tv/${videoId}`;
-      case 'kick':
-        return `https://kick.com/${videoId}`;
-      default:
-        return '';
-    }
-  };
+  if (!API_URL || platform === 'custom') return null;
 
   const handleDownload = async () => {
-    const url = getVideoUrl();
-    if (!url) return;
-
-    setIsDownloading(true);
-    setStatus('downloading');
-    setMessage('Downloading video from source...');
-
+    setState('busy');
     try {
-      const response = await fetch('http://localhost:3001/api/download', {
+      const response = await fetch(new URL('/api/download', API_URL), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: getSourceUrl(platform, videoId) }),
       });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || 'Download request failed');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setStatus('success');
-        setMessage(`✅ Uploaded to cloud!`);
-        setTimeout(() => {
-          setStatus('idle');
-          setMessage('');
-        }, 3000);
-      } else {
-        setStatus('error');
-        setMessage(data.message || data.error || 'Download failed');
-      }
-    } catch (error) {
-      setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Download failed');
-    } finally {
-      setIsDownloading(false);
+      const data = await response.json().catch(() => ({}));
+      setState(response.ok && data.success ? 'done' : 'error');
+    } catch {
+      setState('error');
     }
+    window.setTimeout(() => setState('idle'), 3000);
   };
 
+  const label = { idle: 'Save to cloud', busy: 'Saving...', done: 'Saved to cloud', error: 'Save failed' }[state];
+
   return (
-    <div className={styles.container}>
-      <button
-        className={`${styles.button} ${styles[status]}`}
-        onClick={handleDownload}
-        disabled={isDownloading}
-        title="Download and upload to cloud"
-      >
-        {isDownloading ? '⏳' : '💾'}
-      </button>
-      {message && (
-        <div className={`${styles.message} ${styles[status]}`}>
-          {message}
-        </div>
-      )}
-    </div>
+    <button type="button" className={className} onClick={handleDownload} disabled={state === 'busy'} title={label} aria-label={label} data-state={state}>
+      <DownloadIcon size={15} />
+    </button>
   );
 }

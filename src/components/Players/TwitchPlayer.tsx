@@ -1,102 +1,56 @@
-import { useState, useEffect, useRef } from "react"; // import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { loadTwitchApi } from '../../services/scriptLoader';
+import { PlayerError } from './PlayerError';
 
 interface TwitchPlayerProps {
-  channel?: string;
-  video?: string;
+  /** Channel name, or `videos/<id>` for a VOD. */
+  source: string;
   isMuted: boolean;
-  onPlayerReady?: (player: any) => void;
 }
 
-let playerIdCounter = 0;
-
-export function TwitchPlayer({ channel, video, isMuted, onPlayerReady }: TwitchPlayerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+export function TwitchPlayer({ source, isMuted }: TwitchPlayerProps) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerRef = useRef<any>(null);
-  const [playerId] = useState(() => `twitch-player-${++playerIdCounter}`);
-  const isLoadingRef = useRef(false);
-  const [muteKey, setMuteKey] = useState(0);
+  const mutedRef = useRef(isMuted);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    setMuteKey(prev => prev + 1);
-  }, [isMuted]);
+    let cancelled = false;
+    const host = hostRef.current;
+    const target = document.createElement('div');
+    target.style.cssText = 'width:100%;height:100%';
+    host?.appendChild(target);
 
-  useEffect(() => {
-    if (isLoadingRef.current) return;
-    isLoadingRef.current = true;
-
-    const loadPlayer = () => {
-      if (!window.Twitch) {
-        const script = document.createElement('script');
-        script.src = 'https://player.twitch.tv/js/embed/v1.js';
-        script.async = true;
-        script.onload = () => {
-          setTimeout(initPlayer, 100);
-        };
-        document.body.appendChild(script);
-      } else {
-        initPlayer();
-      }
-    };
-
-    const initPlayer = () => {
-      if (containerRef.current && window.Twitch && window.Twitch.Player) {
-        try {
-          const options: any = {
-            width: '100%',
-            height: '100%',
-            parent: [window.location.hostname],
-            muted: isMuted,
-          };
-
-          if (channel) {
-            options.channel = channel;
-          } else if (video) {
-            options.video = video;
-          }
-
-          const targetElement = document.getElementById(playerId);
-          if (targetElement) {
-            playerRef.current = new window.Twitch.Player(playerId, options);
-
-            playerRef.current.addEventListener(window.Twitch.Player.READY, () => {
-              if (playerRef.current && typeof playerRef.current.setMuted === 'function') {
-                playerRef.current.setMuted(isMuted);
-              }
-              if (onPlayerReady) {
-                onPlayerReady(playerRef.current);
-              }
-            });
-          }
-        } catch (error) {
-          console.error('Twitch Player init error:', error);
-          isLoadingRef.current = false;
-        }
-      }
-    };
-
-    loadPlayer();
+    loadTwitchApi()
+      .then(Twitch => {
+        if (cancelled) return;
+        const isVod = source.startsWith('videos/');
+        const player = new Twitch.Player(target, {
+          width: '100%',
+          height: '100%',
+          parent: [window.location.hostname],
+          muted: mutedRef.current,
+          autoplay: true,
+          ...(isVod ? { video: source.slice('videos/'.length) } : { channel: source }),
+        });
+        player.addEventListener(Twitch.Player.READY, () => player.setMuted(mutedRef.current));
+        playerRef.current = player;
+      })
+      .catch(() => !cancelled && setFailed(true));
 
     return () => {
-      if (playerRef.current) {
-        try {
-          const iframe = document.querySelector(`#${playerId} iframe`);
-          if (iframe) {
-            iframe.remove();
-          }
-        } catch (error) {
-          console.error('Twitch Player cleanup error:', error);
-        }
-        playerRef.current = null;
-      }
-      isLoadingRef.current = false;
+      cancelled = true;
+      playerRef.current = null;
+      host?.replaceChildren();
     };
-  }, [channel, video, playerId, muteKey]);
+  }, [source]);
 
-  return <div key={muteKey} id={playerId} ref={containerRef} style={{ width: '100%', height: '100%' }} />;
-}
+  useEffect(() => {
+    mutedRef.current = isMuted;
+    playerRef.current?.setMuted?.(isMuted);
+  }, [isMuted]);
 
-declare global {
-  interface Window {
-    Twitch: any;
-  }
+  if (failed) return <PlayerError message="Twitch player failed to load." />;
+  return <div ref={hostRef} className="player-host" />;
 }

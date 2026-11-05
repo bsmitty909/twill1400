@@ -1,0 +1,12 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* On desktop the player area fills the window exactly; below that it scrolls. */
+@media (min-width: 901px) and (min-height: 560px) {
+  .app {
+    height: 100dvh;
+  }
+}

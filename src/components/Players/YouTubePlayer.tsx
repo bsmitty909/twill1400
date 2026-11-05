@@ -1,107 +1,65 @@
-import { useState, useEffect, useRef } from "react"; // import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { loadYouTubeApi } from '../../services/scriptLoader';
+import { PlayerError } from './PlayerError';
 
 interface YouTubePlayerProps {
   videoId: string;
   isMuted: boolean;
-  onPlayerReady?: (player: any) => void;
 }
 
-let playerIdCounter = 0;
-
-export function YouTubePlayer({ videoId, isMuted, onPlayerReady }: YouTubePlayerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+export function YouTubePlayer({ videoId, isMuted }: YouTubePlayerProps) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerRef = useRef<any>(null);
-  const [playerId] = useState(() => `youtube-player-${++playerIdCounter}`);
-  const isLoadingRef = useRef(false);
+  const mutedRef = useRef(isMuted);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (isLoadingRef.current) return;
-    isLoadingRef.current = true;
+    let cancelled = false;
+    // YT.Player replaces its target node, so give it a node React does not own.
+    const host = hostRef.current;
+    const target = document.createElement('div');
+    host?.appendChild(target);
 
-    const loadPlayer = () => {
-      if (!window.YT) {
-        const tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-
-        window.onYouTubeIframeAPIReady = () => {
-          initPlayer();
-        };
-      } else if (window.YT.Player) {
-        initPlayer();
-      } else {
-        setTimeout(loadPlayer, 100);
-      }
-    };
-
-    const initPlayer = () => {
-      if (containerRef.current && window.YT && window.YT.Player) {
-        try {
-          playerRef.current = new window.YT.Player(playerId, {
-            videoId: videoId,
-            width: '100%',
-            height: '100%',
-            playerVars: {
-              autoplay: 1,
-              controls: 1,
-              modestbranding: 1,
-              rel: 0,
+    loadYouTubeApi()
+      .then(YT => {
+        if (cancelled) return;
+        playerRef.current = new YT.Player(target, {
+          videoId,
+          width: '100%',
+          height: '100%',
+          playerVars: { autoplay: 1, mute: mutedRef.current ? 1 : 0, playsinline: 1, rel: 0, modestbranding: 1 },
+          events: {
+            onReady: (event: { target: { mute(): void; unMute(): void; playVideo(): void } }) => {
+              if (mutedRef.current) event.target.mute();
+              else event.target.unMute();
+              event.target.playVideo();
             },
-            events: {
-              onReady: (event: any) => {
-                const player = event.target;
-                if (isMuted && player.mute) {
-                  player.mute();
-                }
-                if (onPlayerReady) {
-                  onPlayerReady(player);
-                }
-              },
-            },
-          });
-        } catch (error) {
-          console.error('YouTube Player init error:', error);
-          isLoadingRef.current = false;
-        }
-      }
-    };
-
-    loadPlayer();
+          },
+        });
+      })
+      .catch(() => !cancelled && setFailed(true));
 
     return () => {
-      if (playerRef.current && typeof playerRef.current.destroy === 'function') {
-        try {
-          playerRef.current.destroy();
-        } catch (error) {
-          console.error('YouTube Player destroy error:', error);
-        }
+      cancelled = true;
+      try {
+        playerRef.current?.destroy?.();
+      } catch {
+        // Player already torn down by the API.
       }
       playerRef.current = null;
-      isLoadingRef.current = false;
+      host?.replaceChildren();
     };
-  }, [videoId, playerId]);
+  }, [videoId]);
 
   useEffect(() => {
-    if (playerRef.current && typeof playerRef.current.mute === 'function') {
-      try {
-        if (isMuted) {
-          playerRef.current.mute();
-        } else {
-          playerRef.current.unMute();
-        }
-      } catch (error) {
-        console.error('YouTube mute error:', error);
-      }
-    }
+    mutedRef.current = isMuted;
+    const player = playerRef.current;
+    if (!player || typeof player.mute !== 'function') return;
+    if (isMuted) player.mute();
+    else player.unMute();
   }, [isMuted]);
 
-  return <div id={playerId} ref={containerRef} style={{ width: '100%', height: '100%' }} />;
-}
-
-declare global {
-  interface Window {
-    YT: any;
-    onYouTubeIframeAPIReady: () => void;
-  }
+  if (failed) return <PlayerError message="YouTube player failed to load." />;
+  return <div ref={hostRef} className="player-host" />;
 }

@@ -101,7 +101,9 @@ export function getSlotLabel(platform: Platform, videoId: string): string {
       return videoId;
     case 'custom':
       try {
-        return new URL(videoId).hostname.replace(/^www\./, '');
+        const url = new URL(videoId);
+        if (url.origin === window.location.origin && url.pathname.startsWith('/api/archives/recordings/')) return 'Archive recording';
+        return url.hostname.replace(/^www\./, '');
       } catch {
         return 'Custom embed';
       }

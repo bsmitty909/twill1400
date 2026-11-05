@@ -15,7 +15,7 @@ Live: https://twill1400.com
 - **Live chat** - resizable side panel showing YouTube, Twitch, or Kick chat for any slot
 - **Customize** - tile spacing, stream labels, reset pane sizes; **Focus mode** hides everything but the streams
 - **Keyboard** - `1-8` audio, `M` mute, `L` next layout, `C` chat, `F` focus, `Esc` exit focus, `/` URL bar
-- **Archives** (`/archives`, password protected) - add YouTube channels; when one goes live it is recorded automatically with yt-dlp, uploaded unlisted to a dedicated YouTube channel, and listed here to play or add to the viewer
+- **Archives** (`/archives`, password protected) - add YouTube channels; when one goes live it is recorded automatically with yt-dlp, stored in a private DreamObjects bucket for 30 days, and listed here to play, download, or add to the viewer (never indexed; media only via short-lived signed links)
 
 ## Development
 

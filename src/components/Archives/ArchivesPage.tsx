@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { archiveApi, ApiError } from '../../services/archiveApi';
-import type { ArchiveChannel, ArchiveRecording, ArchiveStatus, YouTubeConnection } from '../../services/archiveApi';
+import { archiveApi, ApiError, mediaUrl, thumbnailUrl } from '../../services/archiveApi';
+import type { ArchiveChannel, ArchiveRecording, ArchiveStatus, StorageInfo, YouTubeConnection } from '../../services/archiveApi';
 import { useVideo } from '../../contexts/VideoContext';
 import { navigate } from '../../hooks/useRoute';
 import { formatBytes, formatDate, formatDuration, timeAgo } from './format';
 import {
   AlertIcon,
+  ArchiveIcon,
   CloseIcon,
+  DownloadIcon,
   ExternalIcon,
   LockIcon,
   LogoutIcon,
@@ -293,14 +295,26 @@ function RecordingCard({
   onPlay: (r: ArchiveRecording) => void;
 }) {
   const { addVideo } = useVideo();
-  const playable = recording.status === 'uploaded' && recording.youtubeVideoId;
+  const inStorage = recording.status === 'uploaded' && recording.hasMedia;
+  const onYouTube = recording.status === 'uploaded' && Boolean(recording.youtubeVideoId);
+  const playable = inStorage || onYouTube;
+  const thumb = recording.hasThumbnail
+    ? thumbnailUrl(recording.id)
+    : onYouTube
+      ? `https://i.ytimg.com/vi/${recording.youtubeVideoId}/mqdefault.jpg`
+      : null;
+  const daysLeft = recording.expiresAt ? Math.ceil((new Date(recording.expiresAt).getTime() - now) / 86400000) : null;
   const elapsed =
     recording.status === 'recording' ? Math.round((now - new Date(recording.startedAt).getTime()) / 1000) : recording.durationSec;
   const forcedPrivate = recording.status === 'uploaded' && recording.youtubePrivacy === 'private';
 
   const addToViewer = () => {
-    if (!recording.youtubeVideoId) return;
-    const result = addVideo('youtube', recording.youtubeVideoId);
+    const result = inStorage
+      ? addVideo('custom', new URL(mediaUrl(recording.id), window.location.origin).toString())
+      : recording.youtubeVideoId
+        ? addVideo('youtube', recording.youtubeVideoId)
+        : null;
+    if (!result) return;
     if (result.ok || result.reason === 'duplicate') navigate('watch');
     else void act(() => Promise.reject(new Error('All viewer slots are full. Remove a stream first.')));
   };
@@ -316,7 +330,7 @@ function RecordingCard({
       >
         {playable ? (
           <>
-            <img src={`https://i.ytimg.com/vi/${recording.youtubeVideoId}/mqdefault.jpg`} alt="" loading="lazy" />
+            {thumb ? <img src={thumb} alt="" loading="lazy" /> : <span className={styles.thumbState}>Ready</span>}
             <span className={styles.playOverlay}>
               <PlayIcon size={22} />
             </span>
@@ -345,6 +359,11 @@ function RecordingCard({
         <div className={styles.meta}>
           <span>{formatDate(recording.startedAt)}</span>
           {recording.sizeBytes ? <span>{formatBytes(recording.sizeBytes)}</span> : null}
+          {daysLeft !== null && recording.status === 'uploaded' && (
+            <span className={daysLeft <= 3 ? styles.expiring : undefined}>
+              {daysLeft <= 0 ? 'Deleting soon' : `Deletes in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`}
+            </span>
+          )}
         </div>
         {recording.status === 'uploading' && (
           <div className={styles.progress} aria-hidden="true">
@@ -365,19 +384,27 @@ function RecordingCard({
                 <PlayIcon size={13} />
                 <span>Play</span>
               </button>
+              {inStorage && (
+                <a className={styles.smallButton} href={mediaUrl(recording.id, true)} download>
+                  <DownloadIcon size={13} />
+                  <span>Download</span>
+                </a>
+              )}
               <button type="button" className={styles.smallButton} onClick={addToViewer}>
                 <TvIcon size={14} />
                 <span>Add to viewer</span>
               </button>
-              <a
-                className={styles.smallButton}
-                href={`https://www.youtube.com/watch?v=${recording.youtubeVideoId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <ExternalIcon size={13} />
-                <span>YouTube</span>
-              </a>
+              {onYouTube && (
+                <a
+                  className={styles.smallButton}
+                  href={`https://www.youtube.com/watch?v=${recording.youtubeVideoId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalIcon size={13} />
+                  <span>YouTube</span>
+                </a>
+              )}
             </>
           )}
           {recording.status === 'recording' && (
@@ -399,7 +426,7 @@ function RecordingCard({
             <ConfirmButton
               className={styles.smallButton}
               label="Delete"
-              confirmLabel={recording.youtubeVideoId ? 'Delete from YouTube too?' : 'Delete?'}
+              confirmLabel={recording.youtubeVideoId ? 'Delete from YouTube too?' : recording.hasMedia ? 'Delete permanently?' : 'Delete?'}
               icon={<TrashIcon size={13} />}
               onConfirm={() => act(() => archiveApi.deleteRecording(recording.id), 'Recording deleted.')}
             />
@@ -479,7 +506,7 @@ function RecordingsPanel({
         </ul>
       )}
 
-      {playing?.youtubeVideoId && <PlayerModal recording={playing} onClose={() => setPlaying(null)} />}
+      {playing && (playing.hasMedia || playing.youtubeVideoId) && <PlayerModal recording={playing} onClose={() => setPlaying(null)} />}
     </section>
   );
 }
@@ -493,9 +520,12 @@ function PlayerModal({ recording, onClose }: { recording: ArchiveRecording; onCl
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const src = new URL(`https://www.youtube-nocookie.com/embed/${encodeURIComponent(recording.youtubeVideoId!)}`);
-  src.searchParams.set('autoplay', '1');
-  src.searchParams.set('rel', '0');
+  const youtubeSrc = () => {
+    const src = new URL(`https://www.youtube-nocookie.com/embed/${encodeURIComponent(recording.youtubeVideoId!)}`);
+    src.searchParams.set('autoplay', '1');
+    src.searchParams.set('rel', '0');
+    return src.toString();
+  };
 
   return (
     <div className={styles.modalBackdrop} onClick={onClose}>
@@ -513,20 +543,61 @@ function PlayerModal({ recording, onClose }: { recording: ArchiveRecording; onCl
             <span className={styles.recChannel}>{recording.channelName}</span>
             <h3 className={styles.recTitle}>{recording.sourceTitle}</h3>
           </div>
+          {recording.hasMedia && (
+            <a className={styles.ghostButton} href={mediaUrl(recording.id, true)} download aria-label="Download recording">
+              <DownloadIcon size={15} />
+              <span>Download</span>
+            </a>
+          )}
           <button type="button" className={styles.ghostButton} onClick={onClose} aria-label="Close player">
             <CloseIcon size={16} />
           </button>
         </div>
         <div className={styles.modalPlayer}>
-          <iframe
-            src={src.toString()}
-            title={recording.sourceTitle}
-            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-            allowFullScreen
-          />
+          {recording.hasMedia ? (
+            <video src={mediaUrl(recording.id)} controls autoPlay playsInline preload="metadata" poster={recording.hasThumbnail ? thumbnailUrl(recording.id) : undefined} />
+          ) : (
+            <iframe src={youtubeSrc()} title={recording.sourceTitle} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen />
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+/* ---------------------------------------------------------- storage */
+
+function StorageCard() {
+  const [info, setInfo] = useState<StorageInfo | null>(null);
+  useEffect(() => {
+    archiveApi.storage().then(setInfo, () => undefined);
+  }, []);
+  if (!info) return null;
+
+  const ok = info.configured && !info.error;
+  return (
+    <section className={`${styles.panel} ${styles.youtubeCard}`}>
+      <div className={styles.youtubeBody}>
+        <span className={`${styles.storageLogo} ${ok ? '' : styles.storageLogoWarn}`} aria-hidden="true">
+          <ArchiveIcon size={16} />
+        </span>
+        <div className={styles.channelBody}>
+          <h2 className={styles.panelTitle}>Storage</h2>
+          {!info.configured ? (
+            <p className={styles.muted}>DreamObjects is not configured on the server. Recordings wait on the server until it is.</p>
+          ) : info.error ? (
+            <p className={styles.rowError}>
+              {info.error} Check the bucket name and that the access keys belong to the same DreamObjects user. Recordings wait on the server and can be retried.
+            </p>
+          ) : (
+            <p className={styles.muted}>
+              Private DreamObjects bucket <strong className={styles.strong}>{info.bucket}</strong>
+              {info.retentionDays ? ` · recordings are kept for ${info.retentionDays} days` : ' · recordings are kept until deleted'}
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -600,7 +671,25 @@ function YouTubeCard({ act }: { act: (fn: () => Promise<unknown>, success?: stri
 
 /* --------------------------------------------------------------- page */
 
+/** Keeps the archive out of search results and stops media URLs leaking via Referer. */
+function usePrivatePageMeta() {
+  useEffect(() => {
+    const tags = [
+      Object.assign(document.createElement('meta'), { name: 'robots', content: 'noindex, nofollow, noarchive, nosnippet' }),
+      Object.assign(document.createElement('meta'), { name: 'referrer', content: 'no-referrer' }),
+    ];
+    tags.forEach(tag => document.head.appendChild(tag));
+    const previousTitle = document.title;
+    document.title = 'Archives - TWill';
+    return () => {
+      tags.forEach(tag => tag.remove());
+      document.title = previousTitle;
+    };
+  }, []);
+}
+
 export function ArchivesPage() {
+  usePrivatePageMeta();
   const [session, setSession] = useState<'loading' | 'locked' | 'open'>('loading');
   const [configured, setConfigured] = useState(true);
   const [data, setData] = useState<ArchiveStatus | null>(null);
@@ -726,7 +815,7 @@ export function ArchivesPage() {
         </div>
       </div>
 
-      {data && <YouTubeCard act={act} />}
+      {data && (data.recorder.target === 's3' ? <StorageCard /> : <YouTubeCard act={act} />)}
       {loadError && (
         <p className={`${styles.banner} ${styles.bannerError}`}>
           <AlertIcon size={16} /> {loadError}

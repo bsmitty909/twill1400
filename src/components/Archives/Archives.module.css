@@ -278,6 +278,26 @@
   color: #fff;
 }
 
+.storageLogo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.storageLogoWarn {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--danger);
+}
+
+.expiring {
+  color: #fbbf24;
+}
+
 .strong {
   color: var(--text);
 }
@@ -750,6 +770,13 @@
 
 .modalPlayer {
   aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.modalPlayer video {
+  width: 100%;
+  height: 100%;
+  display: block;
   background: #000;
 }
 

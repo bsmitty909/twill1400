@@ -75,6 +75,11 @@ Restart: `kill -TERM $(cat ~/twill-backend/run.pid)`; cron starts it again withi
 | Variable | Purpose |
 |---|---|
 | `ARCHIVE_PASSWORD_HASH` | Archives password, scrypt hash: `echo -n 'pw' \| node dist/scripts/hashPassword.js` |
+| `ARCHIVE_TARGET` | `s3` (default, DreamObjects) or `youtube` |
+| `S3_ENDPOINT`, `S3_BUCKET` | DreamObjects endpoint (e.g. `https://s3.us-east-005.dream.io`) and private bucket |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | DreamObjects keys for the user that owns the bucket |
+| `S3_REGION` | Signing region, default `us-east-005` |
+| `RETENTION_DAYS` | Recordings older than this are deleted from storage and the list (default `30`, `0` = forever) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | OAuth client (type "Web application") from the Google Cloud project |
 | `PUBLIC_URL` | Origin for the OAuth redirect, default `https://twill1400.com` |
 | `YOUTUBE_PRIVACY` | `unlisted` (default), `private`, or `public` |
@@ -82,7 +87,13 @@ Restart: `kill -TERM $(cat ~/twill-backend/run.pid)`; cron starts it again withi
 | `POLL_INTERVAL_SEC` | Live check interval, default `120` |
 | `MAX_CONCURRENT_RECORDINGS` | Default `4` |
 
-### Google / YouTube setup
+### Privacy of archived videos
+
+- Bucket is private; objects are uploaded without an ACL. Keys contain a random UUID.
+- Browsers only get presigned URLs (6 h) from `/api/archives/recordings/<id>/media`, which requires the Archives login cookie; `?download=1` returns the same file as an attachment.
+- `robots.txt` disallows `/archives` and `/api/`; `/archives` and all `/api/*` responses send `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet`, `Referrer-Policy: no-referrer`, and API responses `Cache-Control: private, no-store`.
+
+### Google / YouTube setup (only when `ARCHIVE_TARGET=youtube`)
 
 1. console.cloud.google.com -> new project -> enable **YouTube Data API v3**
 2. OAuth consent screen: External, add the archive channel's Google account as a test user, then **Publish app** ("In production"); in Testing mode refresh tokens expire after 7 days

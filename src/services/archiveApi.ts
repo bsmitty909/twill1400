@@ -32,6 +32,10 @@ export interface ArchiveRecording {
   youtubePrivacy: string | null;
   error: string | null;
   hasLocalFile: boolean;
+  storage: 's3' | 'youtube' | null;
+  hasMedia: boolean;
+  hasThumbnail: boolean;
+  expiresAt: string | null;
 }
 
 export interface ArchiveStatus {
@@ -42,6 +46,9 @@ export interface ArchiveStatus {
     uploadQueue: number;
     uploading: boolean;
     youtubeConfigured: boolean;
+    target: 's3' | 'youtube';
+    targetReady: boolean;
+    retentionDays: number;
     pollIntervalSec: number;
   };
 }
@@ -58,6 +65,18 @@ export interface YouTubeConnection {
   privacy: string;
   redirectUri: string;
 }
+
+export interface StorageInfo {
+  target: 's3' | 'youtube';
+  configured: boolean;
+  bucket: string | null;
+  retentionDays: number;
+  error: string | null;
+}
+
+export const mediaUrl = (id: string, download = false) =>
+  `/api/archives/recordings/${encodeURIComponent(id)}/media${download ? '?download=1' : ''}`;
+export const thumbnailUrl = (id: string) => `/api/archives/recordings/${encodeURIComponent(id)}/thumbnail`;
 
 export class ApiError extends Error {
   readonly status: number;
@@ -104,6 +123,7 @@ export const archiveApi = {
   removeChannel: (id: string) => request<{ ok: true }>(`/api/archives/channels/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   stopRecording: (id: string) => post<{ ok: true }>(`/api/archives/recordings/${encodeURIComponent(id)}/stop`),
   retryRecording: (id: string) => post<{ ok: true }>(`/api/archives/recordings/${encodeURIComponent(id)}/retry`),
+  storage: () => request<StorageInfo>('/api/archives/storage'),
   youtube: () => request<YouTubeConnection>('/api/archives/youtube'),
   connectYouTube: () => post<{ url: string }>('/api/archives/youtube/connect'),
   disconnectYouTube: () => request<{ ok: true }>('/api/archives/youtube', { method: 'DELETE' }),

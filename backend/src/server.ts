@@ -16,6 +16,17 @@ app.set('trust proxy', 'loopback');
 app.disable('x-powered-by');
 app.use(express.json({ limit: '64kb' }));
 
+// Nothing the API returns may be indexed, cached by shared caches, or leak
+// presigned media URLs through the Referer header.
+app.use('/api', (_req, res, next) => {
+  res.set({
+    'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
+    'Cache-Control': 'private, no-store',
+    'Referrer-Policy': 'no-referrer',
+  });
+  next();
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });

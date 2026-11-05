@@ -8,7 +8,8 @@ import { youtubeConfigured } from './youtubeAccount';
 import { store } from '../store';
 import type { Channel, Recording } from '../store';
 import { checkLive, recordLive } from './ytdlp';
-import { uploadVideo } from './youtube';
+import { deleteVideo, uploadVideo } from './youtube';
+import { deleteObject, storageConfigured, uploadFile } from './objectStorage';
 
 /*
  * Recording pipeline
@@ -27,6 +28,7 @@ const uploadQueue: string[] = [];
 let uploading = false;
 let polling = false;
 let pollTimer: NodeJS.Timeout | null = null;
+let sweepTimer: NodeJS.Timeout | null = null;
 
 const now = () => new Date().toISOString();
 
@@ -178,10 +180,40 @@ export function stopRecording(id: string): boolean {
 
 // ------------------------------------------------------------- processing
 
+/** Whether the configured archive destination can accept uploads now. */
+export function targetReady(): boolean {
+  return config.archiveTarget === 's3' ? storageConfigured() : youtubeConfigured();
+}
+
+function waitingMessage(): string {
+  return config.archiveTarget === 's3'
+    ? 'Waiting for DreamObjects storage to be configured.'
+    : 'Waiting for a YouTube account to be connected.';
+}
+
+function slug(value: string): string {
+  return value.normalize('NFKD').replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 60) || 'channel';
+}
+
+/** recordings/2026/11/lofi-girl/2026-11-04T19-08-07-<id>.mp4 */
+function objectKey(recording: Recording, ext: string): string {
+  const started = recording.startedAt.replace(/[:.]/g, '-').slice(0, 19);
+  return `recordings/${recording.startedAt.slice(0, 4)}/${recording.startedAt.slice(5, 7)}/${slug(recording.channelName)}/${started}-${recording.id}.${ext}`;
+}
+
+export function downloadName(recording: Recording): string {
+  const clean = (v: string) => v.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return `${clean(recording.channelName)} - ${recording.startedAt.slice(0, 10)} - ${clean(recording.sourceTitle)}`.slice(0, 150) + '.mp4';
+}
+
 function uploadTitle(recording: Recording): string {
   const date = recording.startedAt.slice(0, 10);
   const clean = (s: string) => s.replace(/[<>]/g, '').trim();
   return `${clean(recording.channelName)} | ${date} | ${clean(recording.sourceTitle)}`.slice(0, 100);
+}
+
+function thumbnailPath(id: string): string {
+  return path.join(config.recordingsDir, `${id}.thumb.jpg`);
 }
 
 async function processRecording(id: string) {
@@ -208,12 +240,17 @@ async function processRecording(id: string) {
     const probe = await exec(config.ffmpegPath.replace(/ffmpeg$/, 'ffprobe'), [
       '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', mp4,
     ]).catch(() => '');
+    const durationSec = Math.round(Number.parseFloat(probe)) || null;
+    await exec(config.ffmpegPath, [
+      '-y', '-loglevel', 'error', '-ss', String(Math.min(10, Math.floor((durationSec ?? 2) / 2))), '-i', mp4,
+      '-frames:v', '1', '-vf', 'scale=480:-2', '-q:v', '4', thumbnailPath(id),
+    ]).catch(() => undefined);
     store.updateRecording(id, {
       filePath: mp4,
       sizeBytes: fileSize(mp4),
-      durationSec: Math.round(Number.parseFloat(probe)) || null,
+      durationSec,
       status: 'queued',
-      error: youtubeConfigured() ? null : 'Waiting for a YouTube account to be connected.',
+      error: targetReady() ? null : waitingMessage(),
     });
     enqueueUpload(id);
   } catch (error) {
@@ -229,7 +266,7 @@ export function enqueueUpload(id: string) {
 }
 
 async function drainUploads() {
-  if (uploading || !youtubeConfigured()) return;
+  if (uploading || !targetReady()) return;
   uploading = true;
   try {
     while (uploadQueue.length) {
@@ -243,42 +280,9 @@ async function drainUploads() {
       }
 
       store.updateRecording(id, { status: 'uploading', error: null, uploadProgress: recording.uploadProgress ?? 0 });
-      let lastSaved = 0;
       try {
-        const result = await uploadVideo(
-          recording.filePath,
-          {
-            title: uploadTitle(recording),
-            description: [
-              `Live recording of ${recording.channelName}.`,
-              `Original stream: https://www.youtube.com/watch?v=${recording.sourceVideoId}`,
-              `Original title: ${recording.sourceTitle}`,
-              `Recorded: ${recording.startedAt} - ${recording.endedAt ?? 'unknown'} (UTC)`,
-            ].join('\n'),
-            tags: ['twill-archive', recording.channelName],
-            recordingDate: recording.startedAt,
-          },
-          {
-            sessionUrl: recording.uploadUrl,
-            onSession: url => store.updateRecording(id, { uploadUrl: url }),
-            onProgress: fraction => {
-              if (fraction - lastSaved >= 0.02 || fraction === 1) {
-                lastSaved = fraction;
-                store.updateRecording(id, { uploadProgress: fraction });
-              }
-            },
-          }
-        );
-        removeFile(recording.filePath);
-        store.updateRecording(id, {
-          status: 'uploaded',
-          youtubeVideoId: result.videoId,
-          youtubePrivacy: result.privacyStatus,
-          filePath: null,
-          uploadUrl: null,
-          uploadProgress: 1,
-        });
-        log(`Uploaded ${id} -> ${result.videoId} (${result.privacyStatus})`);
+        if (config.archiveTarget === 's3') await uploadToStorage(recording);
+        else await uploadToYouTube(recording);
       } catch (error) {
         const message = (error as Error).message;
         store.updateRecording(id, {
@@ -294,7 +298,115 @@ async function drainUploads() {
   }
 }
 
-/** Called once YouTube gets connected: push everything that was waiting. */
+function progressSaver(id: string) {
+  let lastSaved = 0;
+  return (fraction: number) => {
+    if (fraction - lastSaved >= 0.02 || fraction === 1) {
+      lastSaved = fraction;
+      store.updateRecording(id, { uploadProgress: fraction });
+    }
+  };
+}
+
+async function uploadToStorage(recording: Recording) {
+  const id = recording.id;
+  const key = objectKey(recording, 'mp4');
+  await uploadFile(recording.filePath!, key, 'video/mp4', progressSaver(id));
+
+  let thumbnailKey: string | null = null;
+  const thumb = thumbnailPath(id);
+  if (fs.existsSync(thumb)) {
+    thumbnailKey = objectKey(recording, 'jpg');
+    await uploadFile(thumb, thumbnailKey, 'image/jpeg').catch(() => {
+      thumbnailKey = null;
+    });
+    removeFile(thumb);
+  }
+
+  removeFile(recording.filePath);
+  store.updateRecording(id, {
+    status: 'uploaded',
+    storage: 's3',
+    storageKey: key,
+    thumbnailKey,
+    filePath: null,
+    uploadUrl: null,
+    uploadProgress: 1,
+  });
+  log(`Stored ${id} -> s3://${config.s3.bucket}/${key}`);
+}
+
+async function uploadToYouTube(recording: Recording) {
+  const id = recording.id;
+  const result = await uploadVideo(
+    recording.filePath!,
+    {
+      title: uploadTitle(recording),
+      description: [
+        `Live recording of ${recording.channelName}.`,
+        `Original stream: https://www.youtube.com/watch?v=${recording.sourceVideoId}`,
+        `Original title: ${recording.sourceTitle}`,
+        `Recorded: ${recording.startedAt} - ${recording.endedAt ?? 'unknown'} (UTC)`,
+      ].join('\n'),
+      tags: ['twill-archive', recording.channelName],
+      recordingDate: recording.startedAt,
+    },
+    {
+      sessionUrl: recording.uploadUrl,
+      onSession: url => store.updateRecording(id, { uploadUrl: url }),
+      onProgress: progressSaver(id),
+    }
+  );
+  removeFile(recording.filePath);
+  removeFile(thumbnailPath(id));
+  store.updateRecording(id, {
+    status: 'uploaded',
+    storage: 'youtube',
+    youtubeVideoId: result.videoId,
+    youtubePrivacy: result.privacyStatus,
+    filePath: null,
+    uploadUrl: null,
+    uploadProgress: 1,
+  });
+  log(`Uploaded ${id} -> ${result.videoId} (${result.privacyStatus})`);
+}
+
+/** Removes a recording everywhere it exists: storage, YouTube, local disk. */
+export async function purgeRecording(recording: Recording, options: { keepYouTube?: boolean } = {}) {
+  if (recording.storageKey) await deleteObject(recording.storageKey);
+  if (recording.thumbnailKey) await deleteObject(recording.thumbnailKey).catch(() => undefined);
+  if (recording.youtubeVideoId && !options.keepYouTube && youtubeConfigured()) await deleteVideo(recording.youtubeVideoId);
+  removeFile(recording.filePath);
+  removeFile(thumbnailPath(recording.id));
+  store.removeRecording(recording.id);
+}
+
+/*
+ * Retention: anything that started more than RETENTION_DAYS ago is deleted
+ * from storage and the list. Finished-but-never-uploaded local files are
+ * held to the same limit so a misconfiguration cannot fill the VPS disk.
+ */
+async function sweepExpired() {
+  if (!config.retentionDays) return;
+  const cutoff = Date.now() - config.retentionDays * 86400 * 1000;
+  for (const recording of [...store.recordings()]) {
+    if (new Date(recording.startedAt).getTime() > cutoff) continue;
+    if (['recording', 'processing', 'uploading'].includes(recording.status)) continue;
+    try {
+      await purgeRecording(recording, { keepYouTube: recording.storage === 'youtube' });
+      log(`Retention: removed ${recording.id} (${recording.channelName}, ${recording.startedAt})`);
+    } catch (error) {
+      log(`Retention: could not remove ${recording.id}: ${(error as Error).message}`);
+    }
+  }
+}
+
+export function expiresAt(recording: Recording): string | null {
+  if (!config.retentionDays) return null;
+  return new Date(new Date(recording.startedAt).getTime() + config.retentionDays * 86400 * 1000).toISOString();
+}
+
+/** Called once the destination becomes available: push everything that was waiting. */
 export function resumePendingUploads() {
   for (const recording of store.recordings()) {
     if (recording.status === 'queued') {
@@ -314,10 +426,6 @@ export function retryRecording(id: string): boolean {
     enqueueUpload(id);
   }
   return true;
-}
-
-export function discardLocalFile(recording: Recording) {
-  removeFile(recording.filePath);
 }
 
 // -------------------------------------------------------------- lifecycle
@@ -361,11 +469,17 @@ export async function startRecorder() {
   await recover();
   void pollAll();
   pollTimer = setInterval(() => void pollAll(), config.pollIntervalSec * 1000);
-  log(`Recorder running: polling every ${config.pollIntervalSec}s, YouTube uploads ${youtubeConfigured() ? 'enabled' : 'NOT configured'}`);
+  void sweepExpired();
+  sweepTimer = setInterval(() => void sweepExpired(), 3600 * 1000);
+  log(
+    `Recorder running: polling every ${config.pollIntervalSec}s, archive target ${config.archiveTarget} ` +
+      `(${targetReady() ? 'ready' : 'NOT configured'}), retention ${config.retentionDays || 'unlimited'} days`
+  );
 }
 
 export async function stopRecorder() {
   if (pollTimer) clearInterval(pollTimer);
+  if (sweepTimer) clearInterval(sweepTimer);
   const exits = [...active.values()].map(
     ({ child }) => new Promise<void>(resolve => {
       child.once('close', () => resolve());
@@ -382,6 +496,9 @@ export function recorderState() {
     uploadQueue: uploadQueue.length,
     uploading,
     youtubeConfigured: youtubeConfigured(),
+    target: config.archiveTarget,
+    targetReady: targetReady(),
+    retentionDays: config.retentionDays,
     pollIntervalSec: config.pollIntervalSec,
   };
 }

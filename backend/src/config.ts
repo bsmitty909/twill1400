@@ -38,6 +38,20 @@ export const config = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     refreshToken: process.env.YOUTUBE_REFRESH_TOKEN || '',
   },
+  s3: {
+    endpoint: process.env.S3_ENDPOINT || '',
+    bucket: process.env.S3_BUCKET || '',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+    region: process.env.S3_REGION || 'us-east-005',
+  },
+  /** Where finished recordings go: DreamObjects ('s3') or YouTube. */
+  archiveTarget: (process.env.ARCHIVE_TARGET === 'youtube' ? 'youtube' : 's3') as 's3' | 'youtube',
+  /** Recordings older than this are deleted from storage (0 = keep forever). */
+  retentionDays: Number.isFinite(Number(process.env.RETENTION_DAYS)) && process.env.RETENTION_DAYS !== '' && process.env.RETENTION_DAYS !== undefined
+    ? Math.max(0, Number(process.env.RETENTION_DAYS))
+    : 30,
+
   youtubePrivacy: (['unlisted', 'private', 'public'].includes(process.env.YOUTUBE_PRIVACY || '')
     ? process.env.YOUTUBE_PRIVACY
     : 'unlisted') as 'unlisted' | 'private' | 'public',

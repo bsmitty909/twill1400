@@ -38,6 +38,10 @@ export interface Recording {
   uploadProgress: number | null;
   youtubeVideoId: string | null;
   youtubePrivacy: string | null;
+  /** Where the finished recording lives. */
+  storage?: 's3' | 'youtube' | null;
+  storageKey?: string | null;
+  thumbnailKey?: string | null;
   error: string | null;
 }
 

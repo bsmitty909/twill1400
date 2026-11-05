@@ -112,7 +112,7 @@ export function Header() {
               spellCheck={false}
               value={url}
               onChange={e => setUrl(e.target.value)}
-              placeholder="Paste YouTube, Twitch, or Kick links..."
+              placeholder="Paste stream links..."
               className={styles.input}
               aria-describedby="stream-url-feedback"
             />

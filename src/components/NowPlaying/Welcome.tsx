@@ -46,19 +46,24 @@ export function Welcome({ notify }: { notify: Notify }) {
 
   return (
     <section className={styles.welcome}>
-      <div className={styles.hero}>
-        <div className={styles.heroGlow} aria-hidden="true" />
-        <span className={styles.eyebrow}>
-          <SparkleIcon size={13} /> Multi-stream viewer
-        </span>
+      <div className={`${styles.hero} frame`}>
+        <div className={styles.heroBar}>
+          <span className={styles.led} aria-hidden="true" />
+          <span className="tag">Multi-stream console</span>
+          <span className={`tag ${styles.heroSpec}`}>
+            {SLOT_COUNT} CH / 4 layouts / YT · TTV · KICK
+          </span>
+        </div>
+        <div className={styles.heroBody}>
         <h2 className={styles.heroTitle}>
-          Every stream you follow, <span className={styles.heroAccent}>one screen.</span>
+          Every stream. <span className={styles.heroAccent}>One screen.</span>
         </h2>
         <p className={styles.heroText}>
           Watch up to {SLOT_COUNT} live channels, VODs, and videos side by side. Paste one link or a whole list, then arrange, listen, and
           chat without switching tabs.
         </p>
 
+        <span className={`tag ${styles.sectionTag}`}>01 / Input</span>
         <form className={styles.heroForm} onSubmit={submit}>
           <label htmlFor="hero-links" className={styles.srOnly}>
             Stream links
@@ -83,7 +88,7 @@ export function Welcome({ notify }: { notify: Notify }) {
           </div>
           <button type="submit" className={styles.primaryCta}>
             <PlusIcon size={16} />
-            Start watching
+            Load streams
           </button>
         </form>
         {error && (
@@ -95,7 +100,7 @@ export function Welcome({ notify }: { notify: Notify }) {
         <div className={styles.heroMeta}>
           <button type="button" className={styles.secondaryCta} onClick={() => quickAdd(DEMO_STREAMS)}>
             <SparkleIcon size={14} />
-            Try a demo
+            Run demo
           </button>
           <ul className={styles.platforms}>
             {(['youtube', 'twitch', 'kick', 'custom'] as const).map(p => (
@@ -105,17 +110,17 @@ export function Welcome({ notify }: { notify: Notify }) {
               </li>
             ))}
           </ul>
-
+        </div>
         </div>
       </div>
 
       {(recent.length > 0 || setups.length > 0) && (
         <div className={styles.libraryGrid}>
           {recent.length > 0 && (
-            <div className={styles.libraryCard}>
+            <div className={`${styles.libraryCard} frame`}>
               <div className={styles.libraryHeader}>
                 <h3>
-                  <HistoryIcon size={15} /> Recently watched
+                  <HistoryIcon size={14} /> 02 / Recently watched
                 </h3>
                 <button type="button" className={styles.linkButton} onClick={clearRecent}>
                   Clear
@@ -139,10 +144,10 @@ export function Welcome({ notify }: { notify: Notify }) {
             </div>
           )}
           {setups.length > 0 && (
-            <div className={styles.libraryCard}>
+            <div className={`${styles.libraryCard} frame`}>
               <div className={styles.libraryHeader}>
                 <h3>
-                  <BookmarkIcon size={15} /> Saved setups
+                  <BookmarkIcon size={14} /> 03 / Saved setups
                 </h3>
               </div>
               <SetupList setups={setups} notify={notify} />
@@ -152,11 +157,14 @@ export function Welcome({ notify }: { notify: Notify }) {
       )}
 
       <ul className={styles.features}>
-        {FEATURES.map(({ Icon, title, text: body }) => (
-          <li key={title} className={styles.feature}>
-            <span className={styles.featureIcon}>
-              <Icon size={18} />
-            </span>
+        {FEATURES.map(({ Icon, title, text: body }, i) => (
+          <li key={title} className={`${styles.feature} frame`}>
+            <div className={styles.featureTop}>
+              <span className={styles.featureIcon}>
+                <Icon size={18} />
+              </span>
+              <span className="tag">F-0{i + 1}</span>
+            </div>
             <strong>{title}</strong>
             <span>{body}</span>
           </li>

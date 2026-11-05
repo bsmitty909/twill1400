@@ -1,13 +1,14 @@
 :root {
-  --bg: #0a0a0d;
-  --surface: #131318;
-  --surface-2: #1b1b22;
-  --surface-3: #24242d;
-  --border: #25252e;
-  --border-strong: #363642;
-  --text: #f4f4f6;
-  --text-muted: #a1a1ad;
-  --text-dim: #6c6c78;
+  --bg: #0b0c0d;
+  --surface: #121416;
+  --surface-2: #181b1e;
+  --surface-3: #202428;
+  --border: #262a2f;
+  --border-strong: #353a41;
+  --text: #e8eaec;
+  --text-muted: #9aa1a9;
+  --text-dim: #646b73;
+  --amber: #f5a524;
   --accent-rgb: 37, 99, 235;
   --accent: #2563eb;
   --accent-hover: #3b82f6;
@@ -16,15 +17,24 @@
   --success: #22c55e;
   --danger: #f87171;
 
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --radius-sm: 1px;
+  --radius: 2px;
+  --radius-lg: 2px;
+  --shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 12px 28px rgba(0, 0, 0, 0.5);
+
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'IBM Plex Sans', sans-serif;
+
+  /* Diagonal hazard hatch, drawn with SVG (no gradients). */
+  --hatch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M-3 3l6-6M0 12L12 0M9 15l6-6' stroke='%23ffffff' stroke-opacity='0.045' stroke-width='3'/%3E%3C/svg%3E");
+  /* Technical grid backdrop. */
+  --grid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M48 0H0V48' fill='none' stroke='%23ffffff' stroke-opacity='0.028'/%3E%3C/svg%3E");
   --header-h: 64px;
   --gutter: clamp(12px, 2vw, 20px);
 
   color-scheme: dark;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.5;
   color: var(--text);
@@ -44,6 +54,84 @@
 html,
 body {
   background: var(--bg);
+}
+
+body {
+  background-image: var(--grid);
+  background-attachment: fixed;
+}
+
+/*
+ * Industrial frame: corner registration marks on a panel. Add the global
+ * class "frame" next to a module class; the element must be positioned.
+ */
+.frame {
+  position: relative;
+}
+
+.frame::before,
+.frame::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--text-dim);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.frame::before {
+  top: -1px;
+  left: -1px;
+  border-width: 2px 0 0 2px;
+}
+
+.frame::after {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 2px 2px 0;
+}
+
+/* Monospace technical label, e.g. "01 / INPUT". */
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Square, industrial range sliders. */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border-strong);
+  border-radius: 0;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 18px;
+  border-radius: 1px;
+  background: var(--accent);
+  border: 1px solid var(--accent-hover);
+  cursor: pointer;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 18px;
+  border-radius: 1px;
+  background: var(--accent);
+  border: 1px solid var(--accent-hover);
+  cursor: pointer;
+}
+
+input[type='checkbox'] {
+  accent-color: var(--accent);
 }
 
 body {
@@ -103,7 +191,7 @@ img {
 
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 5px;
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {

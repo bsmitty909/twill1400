@@ -51,7 +51,7 @@ function LoginCard({ onSuccess, configured }: { onSuccess: () => void; configure
 
   return (
     <section className={styles.loginWrap}>
-      <form className={styles.loginCard} onSubmit={submit}>
+      <form className={`${styles.loginCard} frame`} onSubmit={submit}>
         <span className={styles.lockBadge}>
           <LockIcon size={22} />
         </span>
@@ -247,7 +247,7 @@ function ChannelsPanel({
   };
 
   return (
-    <section className={styles.panel}>
+    <section className={`${styles.panel} frame`}>
       <header className={styles.panelHeader}>
         <div>
           <h2 className={styles.panelTitle}>Channels</h2>
@@ -466,7 +466,7 @@ function RecordingsPanel({
   });
 
   return (
-    <section className={styles.panel}>
+    <section className={`${styles.panel} frame`}>
       <header className={styles.panelHeader}>
         <div>
           <h2 className={styles.panelTitle}>Recordings</h2>
@@ -576,7 +576,7 @@ function StorageCard() {
 
   const ok = info.configured && !info.error;
   return (
-    <section className={`${styles.panel} ${styles.youtubeCard}`}>
+    <section className={`${styles.panel} ${styles.youtubeCard} frame`}>
       <div className={styles.youtubeBody}>
         <span className={`${styles.storageLogo} ${ok ? '' : styles.storageLogoWarn}`} aria-hidden="true">
           <ArchiveIcon size={16} />
@@ -624,7 +624,7 @@ function YouTubeCard({ act }: { act: (fn: () => Promise<unknown>, success?: stri
   if (!info) return null;
 
   return (
-    <section className={`${styles.panel} ${styles.youtubeCard}`}>
+    <section className={`${styles.panel} ${styles.youtubeCard} frame`}>
       <div className={styles.youtubeBody}>
         <span className={styles.youtubeLogo} aria-hidden="true">
           <PlayIcon size={14} />

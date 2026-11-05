@@ -17,7 +17,7 @@ const DEMO_STREAMS: StreamRef[] = [
 ];
 
 const FEATURES = [
-  { Icon: GridIcon, title: 'Four layouts', text: 'Stage, Spotlight, Theater, and Grid. Drag any divider to resize live.' },
+  { Icon: GridIcon, title: 'Layouts & focus', text: 'Four resizable layouts. Focus hides everything but the streams; Solo shows just one.' },
   { Icon: VolumeOnIcon, title: 'One-tap audio', text: 'Exactly one stream plays sound. Switch with a click or keys 1-8.' },
   { Icon: ChatIcon, title: 'Live chat', text: 'Follow YouTube, Twitch, or Kick chat right beside the streams.' },
   { Icon: ShareIcon, title: 'Save & share', text: 'Save setups for later or send a link that opens the same view.' },
@@ -174,7 +174,7 @@ export function Welcome({ notify }: { notify: Notify }) {
       <p className={styles.shortcutStrip}>
         <KeyboardIcon size={15} />
         <span>
-          <kbd>/</kbd> paste link <kbd>1-8</kbd> audio <kbd>L</kbd> layout <kbd>C</kbd> chat <kbd>F</kbd> focus
+          <kbd>/</kbd> paste link <kbd>F</kbd> focus <kbd>S</kbd> solo <kbd>1-8</kbd> audio <kbd>L</kbd> layout <kbd>C</kbd> chat
         </span>
       </p>
     </section>

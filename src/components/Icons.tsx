@@ -237,3 +237,22 @@ export const CheckIcon = (p: IconProps) => (
     <path d="M20 6 9 17l-5-5" />
   </Icon>
 );
+
+export const MaximizeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
+  </Icon>
+);
+
+export const MinimizeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5" />
+  </Icon>
+);
+
+export const SoloIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="1" />
+    <path d="M10 9.5v5l4-2.5z" fill="currentColor" />
+  </Icon>
+);

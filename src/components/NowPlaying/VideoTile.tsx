@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { usePrefs } from '../../hooks/usePrefs';
+import { updatePrefs, usePrefs } from '../../hooks/usePrefs';
 import type { VideoSlot } from '../../types/index.ts';
 import { useVideo } from '../../contexts/VideoContext';
 import { getSourceUrl, PLATFORM_META } from '../../services/urlParser';
@@ -11,7 +11,7 @@ import { KickPlayer } from '../Players/KickPlayer';
 import { CustomPlayer } from '../Players/CustomPlayer';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { DownloadButton } from './DownloadButton';
-import { CloseIcon, ExpandIcon, ExternalIcon, GripIcon, PlusIcon, StarIcon, VolumeOffIcon, VolumeOnIcon } from '../Icons';
+import { CloseIcon, ExpandIcon, ExternalIcon, GridIcon, GripIcon, PlusIcon, SoloIcon, StarIcon, VolumeOffIcon, VolumeOnIcon } from '../Icons';
 import styles from './NowPlaying.module.css';
 
 interface VideoTileProps {
@@ -40,7 +40,7 @@ function Player({ slot, isMuted }: { slot: VideoSlot; isMuted: boolean }) {
 
 export function VideoTile({ slot, compact = false, aspect = false, mainId }: VideoTileProps) {
   const { audioSlot, clearSlot, toggleSlotAudio, swapSlots } = useVideo();
-  const { showLabels } = usePrefs();
+  const { showLabels, soloSlot } = usePrefs();
   const tileRef = useRef<HTMLDivElement | null>(null);
   const filled = Boolean(slot.platform && slot.videoId);
 
@@ -79,7 +79,18 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
   const videoId = slot.videoId!;
   const meta = PLATFORM_META[platform];
   const isAudible = audioSlot === slot.id;
-  const canMakeMain = mainId !== undefined && mainId !== slot.id;
+  const isSolo = soloSlot === slot.id;
+  const canMakeMain = mainId !== undefined && mainId !== slot.id && !isSolo;
+
+  /** Solo: this stream alone, full size, with its audio on. */
+  const toggleSolo = () => {
+    if (isSolo) {
+      updatePrefs({ soloSlot: null });
+      return;
+    }
+    if (audioSlot !== slot.id) toggleSlotAudio(slot.id);
+    updatePrefs({ soloSlot: slot.id, focusMode: true });
+  };
 
   function toggleFullscreen() {
     const el = tileRef.current;
@@ -132,6 +143,16 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
           )}
         </div>
         <div className={styles.overlayRight}>
+          <button
+            type="button"
+            className={`${styles.iconButton} ${isSolo ? styles.iconActive : ''}`}
+            onClick={toggleSolo}
+            aria-pressed={isSolo}
+            aria-label={isSolo ? 'Show all streams' : `Solo slot ${slot.id + 1}`}
+            title={isSolo ? 'Show all streams (Esc)' : 'Solo: watch only this stream (S)'}
+          >
+            {isSolo ? <GridIcon size={14} /> : <SoloIcon size={15} />}
+          </button>
           {canMakeMain && (
             <button
               type="button"

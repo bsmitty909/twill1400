@@ -18,6 +18,8 @@ export interface Prefs {
   chatSlot: number | null;
   chatWidth: number;
   focusMode: boolean;
+  /** Slot shown alone (fills the viewport); null shows the whole layout. */
+  soloSlot: number | null;
   sizes: {
     stageColumns: number[];
     stageMain: number[];
@@ -50,6 +52,7 @@ const DEFAULTS: Prefs = {
   chatSlot: null,
   chatWidth: 340,
   focusMode: false,
+  soloSlot: null,
   sizes: DEFAULT_SIZES,
 };
 
@@ -73,6 +76,7 @@ function load(): Prefs {
       chatSlot: Number.isInteger(saved.chatSlot) ? saved.chatSlot : null,
       chatWidth: Number.isFinite(saved.chatWidth) ? Math.min(CHAT_MAX_WIDTH, Math.max(CHAT_MIN_WIDTH, saved.chatWidth)) : DEFAULTS.chatWidth,
       focusMode: false,
+      soloSlot: null,
       sizes,
     };
   } catch {

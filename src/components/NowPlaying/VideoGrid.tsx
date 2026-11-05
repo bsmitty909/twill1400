@@ -173,7 +173,7 @@ function StackedLayout({ slots, mainId }: LayoutProps) {
 
 export function VideoGrid() {
   const { slots, layout, swapSlots } = useVideo();
-  const { gap } = usePrefs();
+  const { gap, soloSlot } = usePrefs();
   const isNarrow = useMediaQuery('(max-width: 900px)');
   const [draggingId, setDraggingId] = useState<number | null>(null);
 
@@ -206,7 +206,9 @@ export function VideoGrid() {
   const dragged = draggingId !== null ? slots[draggingId] : null;
 
   let content: ReactNode;
-  if (isNarrow) content = <StackedLayout {...props} />;
+  const solo = soloSlot !== null && slots[soloSlot]?.platform ? slots[soloSlot] : null;
+  if (solo) content = <VideoTile slot={solo} aspect={isNarrow} />;
+  else if (isNarrow) content = <StackedLayout {...props} />;
   else if (layout === 'spotlight') content = <SpotlightLayout {...props} />;
   else if (layout === 'theater') content = <TheaterLayout {...props} />;
   else if (layout === 'grid') content = <GridLayout {...props} />;

@@ -9,6 +9,7 @@ import { useStreamLabel } from '../../hooks/useStreamLabel';
 import type { LayoutMode, VideoSlot } from '../../types/index.ts';
 import { VideoGrid } from './VideoGrid';
 import { Welcome } from './Welcome';
+import { FocusHud } from './FocusHud';
 import { SetupsPanel, ShareButton, SharedSetupBanner } from './Library';
 import type { Notify } from './Library';
 import {
@@ -36,13 +37,14 @@ const LAYOUTS: { id: LayoutMode; label: string; Icon: typeof StageIcon }[] = [
 ];
 
 const SHORTCUTS: [string, string][] = [
+  ['F', 'Focus mode (streams only)'],
+  ['S', 'Solo the stream you hear'],
   ['1-8', 'Listen to that slot'],
   ['M', 'Mute / unmute'],
   ['L', 'Next layout'],
   ['C', 'Toggle chat'],
-  ['F', 'Focus mode'],
   ['/', 'Paste a new link'],
-  ['Esc', 'Exit focus mode'],
+  ['Esc', 'Leave solo, then focus'],
 ];
 
 /* ------------------------------------------------------------ chat */
@@ -332,6 +334,17 @@ function Toolbar({ notify }: { notify: Notify }) {
       </div>
 
       <div className={`${styles.toolbarGroup} ${styles.toolbarEnd}`}>
+        <button
+          type="button"
+          className={styles.focusCta}
+          onClick={() => updatePrefs({ focusMode: true })}
+          title="Hide everything but the streams (F)"
+          aria-label="Focus mode"
+        >
+          <FocusIcon size={16} />
+          <span>Focus</span>
+          <kbd>F</kbd>
+        </button>
         {!isNarrow && (
           <div className={styles.segmented} role="radiogroup" aria-label="Layout">
             {LAYOUTS.map(({ id, label, Icon }) => (
@@ -372,12 +385,6 @@ function Toolbar({ notify }: { notify: Notify }) {
           </Popover>
         )}
         {!isNarrow && (
-          <button type="button" className={styles.toolButton} onClick={() => updatePrefs({ focusMode: true })} title="Focus mode (F)" aria-label="Focus mode">
-            <FocusIcon size={16} />
-            <span className={styles.toolLabel}>Focus</span>
-          </button>
-        )}
-        {!isNarrow && (
           <Popover label="Shortcuts" icon={<KeyboardIcon size={16} />}>
             <ul className={styles.shortcuts}>
               {SHORTCUTS.map(([key, text]) => (
@@ -409,7 +416,8 @@ function Toolbar({ notify }: { notify: Notify }) {
 
 function useKeyboardShortcuts() {
   const { slots, layout, setLayout, toggleMuteAll, toggleSlotAudio } = useVideo();
-  const { chatOpen, focusMode } = usePrefs();
+  const { chatOpen, focusMode, soloSlot } = usePrefs();
+  const { audioSlot } = useVideo();
 
   const handler = useCallback(
     (e: KeyboardEvent) => {
@@ -424,7 +432,14 @@ function useKeyboardShortcuts() {
         if (slots[id]?.platform) toggleSlotAudio(id);
       } else if (key === 'm') toggleMuteAll();
       else if (key === 'c') updatePrefs({ chatOpen: !chatOpen });
-      else if (key === 'f') updatePrefs({ focusMode: !focusMode });
+      else if (key === 'f') {
+        if (focusMode && document.fullscreenElement) void document.exitFullscreen();
+        updatePrefs(focusMode ? { focusMode: false, soloSlot: null } : { focusMode: true });
+      } else if (key === 's') {
+        const target = audioSlot ?? slots.find(sl => sl.platform)?.id;
+        if (soloSlot !== null) updatePrefs({ soloSlot: null });
+        else if (target !== undefined) updatePrefs({ soloSlot: target, focusMode: true });
+      } else if (key === 'escape' && soloSlot !== null) updatePrefs({ soloSlot: null });
       else if (key === 'escape' && focusMode) updatePrefs({ focusMode: false });
       else if (key === 'l') {
         const index = LAYOUTS.findIndex(l => l.id === layout);
@@ -432,7 +447,7 @@ function useKeyboardShortcuts() {
       } else return;
       e.preventDefault();
     },
-    [slots, layout, setLayout, toggleMuteAll, toggleSlotAudio, chatOpen, focusMode]
+    [slots, layout, setLayout, toggleMuteAll, toggleSlotAudio, chatOpen, focusMode, soloSlot, audioSlot]
   );
 
   useEffect(() => {
@@ -449,10 +464,19 @@ export function NowPlaying() {
   const isNarrow = useMediaQuery('(max-width: 900px)');
   useKeyboardShortcuts();
 
+  const focusActive = focusMode && filledCount > 0;
+
   useEffect(() => {
-    document.documentElement.classList.toggle('focus-mode', focusMode && !isNarrow);
+    document.documentElement.classList.toggle('focus-mode', focusActive);
     return () => document.documentElement.classList.remove('focus-mode');
-  }, [focusMode, isNarrow]);
+  }, [focusActive]);
+
+  // Leaving focus (any way) also leaves solo and browser fullscreen.
+  useEffect(() => {
+    if (focusActive) return;
+    updatePrefs(prev => (prev.soloSlot !== null ? { soloSlot: null } : {}));
+    if (document.fullscreenElement) void document.exitFullscreen();
+  }, [focusActive]);
 
   const showChat = chatOpen && filledCount > 0;
   const [toast, setToast] = useState<{ tone: 'success' | 'error'; text: string; id: number } | null>(null);
@@ -465,15 +489,10 @@ export function NowPlaying() {
   }, [toast]);
 
   return (
-    <main className={`${styles.container} ${focusMode && !isNarrow ? styles.focus : ''}`}>
-      <SharedSetupBanner notify={notify} />
-      {!(focusMode && !isNarrow) && filledCount > 0 && <Toolbar notify={notify} />}
-      {focusMode && !isNarrow && (
-        <button type="button" className={styles.exitFocus} onClick={() => updatePrefs({ focusMode: false })}>
-          <CloseIcon size={14} />
-          Exit focus <kbd>Esc</kbd>
-        </button>
-      )}
+    <main className={`${styles.container} ${focusActive ? styles.focus : ''}`}>
+      {!focusActive && <SharedSetupBanner notify={notify} />}
+      {!focusActive && filledCount > 0 && <Toolbar notify={notify} />}
+      {focusActive && <FocusHud />}
       {filledCount === 0 ? (
         <Welcome notify={notify} />
       ) : (

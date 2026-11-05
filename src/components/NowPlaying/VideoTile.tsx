@@ -3,7 +3,8 @@ import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { usePrefs } from '../../hooks/usePrefs';
 import type { VideoSlot } from '../../types/index.ts';
 import { useVideo } from '../../contexts/VideoContext';
-import { getSlotLabel, getSourceUrl, PLATFORM_META } from '../../services/urlParser';
+import { getSourceUrl, PLATFORM_META } from '../../services/urlParser';
+import { useStreamLabel } from '../../hooks/useStreamLabel';
 import { YouTubePlayer } from '../Players/YouTubePlayer';
 import { TwitchPlayer } from '../Players/TwitchPlayer';
 import { KickPlayer } from '../Players/KickPlayer';
@@ -48,6 +49,7 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
     disabled: !filled,
   });
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: slot.id });
+  const { label, title: videoTitle } = useStreamLabel(slot.platform ?? 'custom', slot.videoId ?? '');
 
   const classes = [
     styles.tile,
@@ -77,7 +79,6 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
   const videoId = slot.videoId!;
   const meta = PLATFORM_META[platform];
   const isAudible = audioSlot === slot.id;
-  const label = getSlotLabel(platform, videoId);
   const canMakeMain = mainId !== undefined && mainId !== slot.id;
 
   function toggleFullscreen() {
@@ -125,7 +126,7 @@ export function VideoTile({ slot, compact = false, aspect = false, mainId }: Vid
             {!compact && showLabels && <span className={styles.badgeText}>{meta.name}</span>}
           </span>
           {!compact && showLabels && (
-            <span className={styles.label} title={label}>
+            <span className={styles.label} title={videoTitle ? `${label} - ${videoTitle}` : label}>
               {label}
             </span>
           )}

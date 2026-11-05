@@ -10,7 +10,8 @@ import {
   useLibrary,
 } from '../../services/library';
 import type { SavedSetup, StreamRef } from '../../services/library';
-import { getSlotLabel, PLATFORM_META } from '../../services/urlParser';
+import { PLATFORM_META } from '../../services/urlParser';
+import { useStreamLabel } from '../../hooks/useStreamLabel';
 import { CheckIcon, CloseIcon, ShareIcon, TrashIcon } from '../Icons';
 import styles from './NowPlaying.module.css';
 
@@ -18,20 +19,18 @@ export type Notify = (tone: 'success' | 'error', text: string) => void;
 
 const LAYOUT_NAMES = { stage: 'Stage', spotlight: 'Spotlight', theater: 'Theater', grid: 'Grid' } as const;
 
-function describe(stream: StreamRef): string {
-  return `${PLATFORM_META[stream.platform].name} · ${getSlotLabel(stream.platform, stream.videoId)}`;
-}
-
 export function StreamChip({ stream, onClick, onRemove }: { stream: StreamRef; onClick?: () => void; onRemove?: () => void }) {
+  const { label, title } = useStreamLabel(stream.platform, stream.videoId);
+  const describe = `${PLATFORM_META[stream.platform].name} · ${label}`;
   return (
     <span className={styles.streamChip} style={{ ['--platform' as string]: PLATFORM_META[stream.platform].color }}>
-      <button type="button" className={styles.streamChipMain} onClick={onClick} title={`Add ${describe(stream)}`} disabled={!onClick}>
+      <button type="button" className={styles.streamChipMain} onClick={onClick} title={title ? `Add ${describe} - ${title}` : `Add ${describe}`} disabled={!onClick}>
         <span className={styles.badgeDot} />
-        <span className={styles.streamChipName}>{getSlotLabel(stream.platform, stream.videoId)}</span>
+        <span className={styles.streamChipName}>{label}</span>
         <span className={styles.streamChipPlatform}>{PLATFORM_META[stream.platform].name}</span>
       </button>
       {onRemove && (
-        <button type="button" className={styles.streamChipRemove} onClick={onRemove} aria-label={`Forget ${describe(stream)}`}>
+        <button type="button" className={styles.streamChipRemove} onClick={onRemove} aria-label={`Forget ${describe}`}>
           <CloseIcon size={12} />
         </button>
       )}
@@ -67,7 +66,14 @@ export function ShareButton({ notify }: { notify: Notify }) {
   };
 
   return (
-    <button type="button" className={styles.toolButton} onClick={share} disabled={filledCount === 0} title="Copy a link to this setup">
+    <button
+      type="button"
+      className={styles.toolButton}
+      onClick={share}
+      disabled={filledCount === 0}
+      title="Copy a link to this setup"
+      aria-label={copied ? 'Copied' : 'Share'}
+    >
       {copied ? <CheckIcon size={16} /> : <ShareIcon size={16} />}
       <span className={styles.toolLabel}>{copied ? 'Copied' : 'Share'}</span>
     </button>

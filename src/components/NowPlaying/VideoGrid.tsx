@@ -7,7 +7,8 @@ import { useVideo } from '../../contexts/VideoContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { updateSizes, usePrefs } from '../../hooks/usePrefs';
 import type { Prefs } from '../../hooks/usePrefs';
-import { getSlotLabel, PLATFORM_META } from '../../services/urlParser';
+import { PLATFORM_META } from '../../services/urlParser';
+import { StreamLabel } from '../StreamLabel';
 import type { VideoSlot } from '../../types/index.ts';
 import { VideoTile } from './VideoTile';
 import { GripIcon, PlusIcon } from '../Icons';
@@ -222,7 +223,7 @@ export function VideoGrid() {
             <GripIcon size={14} />
             <span className={styles.badgeDot} />
             <span>
-              Slot {dragged.id + 1} · {getSlotLabel(dragged.platform, dragged.videoId)}
+              Slot {dragged.id + 1} · <StreamLabel platform={dragged.platform} videoId={dragged.videoId} />
             </span>
           </div>
         ) : null}

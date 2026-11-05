@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadYouTubeApi } from '../../services/scriptLoader';
+import { setYouTubeMeta } from '../../services/youtubeMeta';
 import { PlayerError } from './PlayerError';
 
 interface YouTubePlayerProps {
@@ -30,7 +31,11 @@ export function YouTubePlayer({ videoId, isMuted }: YouTubePlayerProps) {
           height: '100%',
           playerVars: { autoplay: 1, mute: mutedRef.current ? 1 : 0, playsinline: 1, rel: 0, modestbranding: 1 },
           events: {
-            onReady: (event: { target: { mute(): void; unMute(): void; playVideo(): void } }) => {
+            onReady: (event: {
+              target: { mute(): void; unMute(): void; playVideo(): void; getVideoData?: () => { author?: string; title?: string } };
+            }) => {
+              const data = event.target.getVideoData?.();
+              if (data?.author) setYouTubeMeta(videoId, { author: data.author, title: data.title ?? '' });
               if (mutedRef.current) event.target.mute();
               else event.target.unMute();
               event.target.playVideo();

@@ -4,7 +4,8 @@ import { useVideo, SLOT_COUNT } from '../../contexts/VideoContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { DEFAULT_SIZES, updatePrefs, usePrefs } from '../../hooks/usePrefs';
 import type { GridColumns } from '../../hooks/usePrefs';
-import { getSlotLabel, PLATFORM_META } from '../../services/urlParser';
+import { PLATFORM_META } from '../../services/urlParser';
+import { useStreamLabel } from '../../hooks/useStreamLabel';
 import type { LayoutMode, VideoSlot } from '../../types/index.ts';
 import { VideoGrid } from './VideoGrid';
 import { Welcome } from './Welcome';
@@ -72,6 +73,16 @@ function chatUrl(slot: VideoSlot): string | null {
   }
 }
 
+/** <option> children must be plain text, so the label is resolved here. */
+function ChatOption({ slot }: { slot: VideoSlot }) {
+  const { label } = useStreamLabel(slot.platform!, slot.videoId!);
+  return (
+    <option value={slot.id}>
+      {`${slot.id + 1}. ${PLATFORM_META[slot.platform!].name} - ${label}`}
+    </option>
+  );
+}
+
 function ChatPanel({ isNarrow }: { isNarrow: boolean }) {
   const { slots } = useVideo();
   const { chatSlot, chatWidth } = usePrefs();
@@ -122,9 +133,7 @@ function ChatPanel({ isNarrow }: { isNarrow: boolean }) {
             aria-label="Chat for stream"
           >
             {chattable.map(s => (
-              <option key={s.id} value={s.id}>
-                {s.id + 1}. {PLATFORM_META[s.platform!].name} - {getSlotLabel(s.platform!, s.videoId!)}
-              </option>
+              <ChatOption key={s.id} slot={s} />
             ))}
           </select>
         ) : (
@@ -172,6 +181,7 @@ function Popover({ label, icon, active, children }: { label: string; icon: React
         aria-expanded={open}
         aria-haspopup="dialog"
         title={label}
+        aria-label={label}
       >
         {icon}
         <span className={styles.toolLabel}>{label}</span>
@@ -269,6 +279,7 @@ function Toolbar({ notify }: { notify: Notify }) {
           onClick={toggleMuteAll}
           disabled={filledCount === 0}
           title="Mute / unmute (M)"
+          aria-label={audioSlot === null ? 'Unmute' : 'Mute all'}
         >
           {audioSlot === null ? <VolumeOffIcon size={16} /> : <VolumeOnIcon size={16} />}
           <span className={styles.toolLabel}>{audioSlot === null ? 'Unmute' : 'Mute all'}</span>
@@ -307,6 +318,7 @@ function Toolbar({ notify }: { notify: Notify }) {
                 className={`${styles.segment} ${layout === id ? styles.segmentActive : ''}`}
                 onClick={() => setLayout(id)}
                 title={`${label} layout (L cycles)`}
+                aria-label={label}
               >
                 <Icon size={15} />
                 <span className={styles.segmentLabel}>{label}</span>
@@ -324,6 +336,7 @@ function Toolbar({ notify }: { notify: Notify }) {
           onClick={() => updatePrefs({ chatOpen: !chatOpen })}
           aria-pressed={chatOpen}
           title="Live chat (C)"
+          aria-label="Chat"
         >
           <ChatIcon size={16} />
           <span className={styles.toolLabel}>Chat</span>
@@ -334,7 +347,7 @@ function Toolbar({ notify }: { notify: Notify }) {
           </Popover>
         )}
         {!isNarrow && (
-          <button type="button" className={styles.toolButton} onClick={() => updatePrefs({ focusMode: true })} title="Focus mode (F)">
+          <button type="button" className={styles.toolButton} onClick={() => updatePrefs({ focusMode: true })} title="Focus mode (F)" aria-label="Focus mode">
             <FocusIcon size={16} />
             <span className={styles.toolLabel}>Focus</span>
           </button>
@@ -356,6 +369,8 @@ function Toolbar({ notify }: { notify: Notify }) {
           className={`${styles.toolButton} ${confirmClear ? styles.toolButtonDanger : ''}`}
           onClick={handleClear}
           disabled={filledCount === 0}
+          title={confirmClear ? 'Click again to remove all streams' : 'Clear all'}
+          aria-label={confirmClear ? 'Click to confirm' : 'Clear all'}
         >
           <TrashIcon size={16} />
           <span className={styles.toolLabel}>{confirmClear ? 'Click to confirm' : 'Clear all'}</span>

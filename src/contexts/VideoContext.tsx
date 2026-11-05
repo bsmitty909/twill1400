@@ -17,6 +17,10 @@ interface VideoContextType {
   audioSlot: number | null;
   layout: LayoutMode;
   addVideo: (platform: Platform, videoId: string) => AddVideoResult;
+  /** Adds several streams in one state update; results line up with input. */
+  addVideos: (items: { platform: Platform; videoId: string }[]) => AddVideoResult[];
+  /** Replaces every slot (and optionally the layout), e.g. a saved setup. */
+  loadSetup: (items: { platform: Platform; videoId: string }[], layout?: LayoutMode) => void;
   clearSlot: (slotId: number) => void;
   clearAll: () => void;
   toggleSlotAudio: (slotId: number) => void;
@@ -85,6 +89,31 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     [slots]
   );
 
+  const addVideos = useCallback(
+    (items: { platform: Platform; videoId: string }[]): AddVideoResult[] => {
+      const next = slots.map(s => ({ ...s }));
+      const results = items.map((item): AddVideoResult => {
+        const duplicate = next.find(s => s.platform === item.platform && s.videoId === item.videoId);
+        if (duplicate) return { ok: false, reason: 'duplicate', slotId: duplicate.id };
+        const empty = next.find(s => s.platform === null);
+        if (!empty) return { ok: false, reason: 'full' };
+        empty.platform = item.platform;
+        empty.videoId = item.videoId;
+        return { ok: true, slotId: empty.id };
+      });
+      if (results.some(r => r.ok)) setSlots(next);
+      return results;
+    },
+    [slots]
+  );
+
+  const loadSetup = useCallback((items: { platform: Platform; videoId: string }[], nextLayout?: LayoutMode) => {
+    setSlots(emptySlots().map((slot, i) => (items[i] ? { ...slot, ...items[i] } : slot)));
+    if (nextLayout) setLayout(nextLayout);
+    setAudioSlot(null);
+    lastAudioSlot.current = null;
+  }, []);
+
   const clearSlot = useCallback((slotId: number) => {
     setSlots(prev => prev.map(s => (s.id === slotId ? { ...s, platform: null, videoId: null } : s)));
     setAudioSlot(prev => (prev === slotId ? null : prev));
@@ -137,6 +166,8 @@ export function VideoProvider({ children }: { children: ReactNode }) {
       audioSlot,
       layout,
       addVideo,
+      addVideos,
+      loadSetup,
       clearSlot,
       clearAll,
       toggleSlotAudio,
@@ -144,7 +175,7 @@ export function VideoProvider({ children }: { children: ReactNode }) {
       swapSlots,
       setLayout,
     }),
-    [slots, audioSlot, layout, addVideo, clearSlot, clearAll, toggleSlotAudio, toggleMuteAll, swapSlots]
+    [slots, audioSlot, layout, addVideo, addVideos, loadSetup, clearSlot, clearAll, toggleSlotAudio, toggleMuteAll, swapSlots]
   );
 
   return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;

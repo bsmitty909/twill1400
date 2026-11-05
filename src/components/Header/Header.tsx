@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useVideo, SLOT_COUNT } from '../../contexts/VideoContext';
 import { parseVideoUrl, PLATFORM_META } from '../../services/urlParser';
+import { useAddStreams } from '../../hooks/useAddStreams';
 import { ArchiveIcon, LinkIcon, LockIcon, PlusIcon, TvIcon } from '../Icons';
 import { navigate, useRoute } from '../../hooks/useRoute';
 import styles from './Header.module.css';
@@ -12,10 +13,16 @@ export function Header() {
   const route = useRoute();
   const [url, setUrl] = useState('');
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const { addVideo, filledCount } = useVideo();
+  const { filledCount } = useVideo();
+  const { addFromText } = useAddStreams();
   const inputRef = useRef<HTMLInputElement>(null);
   const isFull = filledCount >= SLOT_COUNT;
-  const detected = useMemo(() => (url.trim() ? parseVideoUrl(url) : null), [url]);
+  const linkCount = useMemo(() => {
+    const text = url.trim();
+    if (!text) return 0;
+    return text.toLowerCase().startsWith('<iframe') ? 1 : text.split(/[\s,]+/).filter(Boolean).length;
+  }, [url]);
+  const detected = useMemo(() => (linkCount === 1 ? parseVideoUrl(url) : null), [url, linkCount]);
 
   useEffect(() => {
     if (!feedback) return;
@@ -37,28 +44,9 @@ export function Header() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) {
-      setFeedback({ tone: 'error', text: 'Paste a stream or video link first.' });
-      return;
-    }
-    const parsed = parseVideoUrl(url);
-    if (!parsed) {
-      setFeedback({ tone: 'error', text: "That link doesn't look right. Try a YouTube, Twitch, or Kick URL." });
-      return;
-    }
-    const result = addVideo(parsed.platform, parsed.videoId);
-    if (!result.ok) {
-      setFeedback({
-        tone: 'error',
-        text:
-          result.reason === 'full'
-            ? `All ${SLOT_COUNT} slots are in use. Remove a stream to add another.`
-            : `Already playing in slot ${(result.slotId ?? 0) + 1}.`,
-      });
-      return;
-    }
-    setFeedback({ tone: 'success', text: `Added to slot ${result.slotId + 1}.` });
-    setUrl('');
+    const result = addFromText(url);
+    setFeedback({ tone: result.tone, text: result.text });
+    if (result.added) setUrl('');
   };
 
   return (
@@ -124,11 +112,15 @@ export function Header() {
               spellCheck={false}
               value={url}
               onChange={e => setUrl(e.target.value)}
-              placeholder="Paste a YouTube, Twitch, or Kick link..."
+              placeholder="Paste YouTube, Twitch, or Kick links..."
               className={styles.input}
               aria-describedby="stream-url-feedback"
             />
-            {detected ? (
+            {linkCount > 1 ? (
+              <span className={styles.detected} style={{ ['--platform' as string]: 'var(--accent)' }}>
+                {linkCount} links
+              </span>
+            ) : detected ? (
               <span className={styles.detected} style={{ ['--platform' as string]: PLATFORM_META[detected.platform].color }}>
                 {PLATFORM_META[detected.platform].name}
               </span>

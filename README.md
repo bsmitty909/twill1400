@@ -14,6 +14,9 @@ Live: https://twill1400.com
 - **Layouts** - Stage, Spotlight, Theater, Grid (column count selectable); every divider resizes live and is remembered per layout; "make main" and per-tile fullscreen (double-click)
 - **Live chat** - resizable side panel showing YouTube, Twitch, or Kick chat for any slot
 - **Customize** - tile spacing, stream labels, reset pane sizes; **Focus mode** hides everything but the streams
+- **Start screen** - paste one link or a whole list, "Try a demo", one-click re-add from recently watched
+- **Saved setups** - name and save the current streams + layout; reload from the toolbar or start screen
+- **Share links** - copies a URL (`/#watch=...`) that opens the same setup; recipients see exactly what will load and choose Open, Add to mine, or Dismiss. Private archive recordings are never included
 - **Keyboard** - `1-8` audio, `M` mute, `L` next layout, `C` chat, `F` focus, `Esc` exit focus, `/` URL bar
 - **Archives** (`/archives`, password protected) - add YouTube channels; when one goes live it is recorded automatically with yt-dlp, stored in a private DreamObjects bucket for 30 days, and listed here to play, download, or add to the viewer (never indexed; media only via short-lived signed links)
 

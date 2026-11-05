@@ -7,7 +7,11 @@ import type { GridColumns } from '../../hooks/usePrefs';
 import { getSlotLabel, PLATFORM_META } from '../../services/urlParser';
 import type { LayoutMode, VideoSlot } from '../../types/index.ts';
 import { VideoGrid } from './VideoGrid';
+import { Welcome } from './Welcome';
+import { SetupsPanel, ShareButton, SharedSetupBanner } from './Library';
+import type { Notify } from './Library';
 import {
+  BookmarkIcon,
   ChatIcon,
   CloseIcon,
   FocusIcon,
@@ -228,7 +232,7 @@ function CustomizePanel() {
 
 /* ---------------------------------------------------------- toolbar */
 
-function Toolbar() {
+function Toolbar({ notify }: { notify: Notify }) {
   const { slots, filledCount, audioSlot, layout, setLayout, toggleMuteAll, toggleSlotAudio, clearAll } = useVideo();
   const { chatOpen } = usePrefs();
   const isNarrow = useMediaQuery('(max-width: 900px)');
@@ -310,6 +314,10 @@ function Toolbar() {
             ))}
           </div>
         )}
+        <ShareButton notify={notify} />
+        <Popover label="Setups" icon={<BookmarkIcon size={16} />}>
+          <SetupsPanel notify={notify} />
+        </Popover>
         <button
           type="button"
           className={`${styles.toolButton} ${chatOpen ? styles.toolButtonActive : ''}`}
@@ -393,44 +401,6 @@ function useKeyboardShortcuts() {
   }, [handler]);
 }
 
-/* ------------------------------------------------------- empty state */
-
-function EmptyState() {
-  return (
-    <section className={styles.emptyState}>
-      <div className={styles.emptyCard}>
-        <span className={styles.eyebrow}>Multi-stream viewer</span>
-        <h2 className={styles.emptyTitle}>Watch up to {SLOT_COUNT} streams at once.</h2>
-        <p className={styles.emptyText}>
-          Paste a link in the bar above to start. Mix live channels, VODs, and videos, follow the chat, and arrange everything exactly how you like.
-        </p>
-        <ul className={styles.platforms}>
-          {(['youtube', 'twitch', 'kick', 'custom'] as const).map(p => (
-            <li key={p} style={{ ['--platform' as string]: PLATFORM_META[p].color }}>
-              <span className={styles.badgeDot} />
-              {p === 'custom' ? 'Any iframe embed' : PLATFORM_META[p].name}
-            </li>
-          ))}
-        </ul>
-        <ol className={styles.steps}>
-          <li>
-            <strong>Add</strong>
-            <span>Paste a channel or video URL and press Enter.</span>
-          </li>
-          <li>
-            <strong>Arrange</strong>
-            <span>Pick Stage, Spotlight, Theater, or Grid, then drag dividers to resize live.</span>
-          </li>
-          <li>
-            <strong>Listen & chat</strong>
-            <span>Choose the audio with 1-8 and open the live chat next to the streams.</span>
-          </li>
-        </ol>
-      </div>
-    </section>
-  );
-}
-
 /* ------------------------------------------------------------ page */
 
 export function NowPlaying() {
@@ -445,10 +415,19 @@ export function NowPlaying() {
   }, [focusMode, isNarrow]);
 
   const showChat = chatOpen && filledCount > 0;
+  const [toast, setToast] = useState<{ tone: 'success' | 'error'; text: string; id: number } | null>(null);
+  const notify: Notify = useCallback((tone, text) => setToast({ tone, text, id: Date.now() }), []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 3500);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   return (
     <main className={`${styles.container} ${focusMode && !isNarrow ? styles.focus : ''}`}>
-      {!(focusMode && !isNarrow) && <Toolbar />}
+      <SharedSetupBanner notify={notify} />
+      {!(focusMode && !isNarrow) && filledCount > 0 && <Toolbar notify={notify} />}
       {focusMode && !isNarrow && (
         <button type="button" className={styles.exitFocus} onClick={() => updatePrefs({ focusMode: false })}>
           <CloseIcon size={14} />
@@ -456,13 +435,18 @@ export function NowPlaying() {
         </button>
       )}
       {filledCount === 0 ? (
-        <EmptyState />
+        <Welcome notify={notify} />
       ) : (
         <div className={`${styles.workspace} ${isNarrow ? styles.workspaceStacked : ''}`}>
           <div className={styles.viewport}>
             <VideoGrid />
           </div>
           {showChat && <ChatPanel isNarrow={isNarrow} />}
+        </div>
+      )}
+      {toast && (
+        <div key={toast.id} className={`${styles.toast} ${toast.tone === 'error' ? styles.toastError : styles.toastSuccess}`} role="status">
+          {toast.text}
         </div>
       )}
     </main>

@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { LayoutMode, Platform, VideoSlot } from '../types/index.ts';
+import { getPrefs, updatePrefs } from '../hooks/usePrefs';
+import type { CanvasRect } from '../hooks/usePrefs';
 
 /*
  * Viewer "library": recently added streams, named saved setups, and
@@ -17,7 +19,63 @@ export interface SavedSetup {
   name: string;
   layout: LayoutMode;
   streams: StreamRef[];
+  /** Custom-layout placement per stream, aligned with `streams`. */
+  canvas?: CanvasPlacement[];
   savedAt: string;
+}
+
+/*
+ * Compact per-stream canvas placement used by saved setups and share
+ * links: [x, y, w, h, z] in percent, 0 = auto-placed, -1 = hidden.
+ */
+export type CanvasPlacement = [number, number, number, number, number] | 0 | -1;
+
+function validPlacement(value: unknown): value is CanvasPlacement {
+  if (value === 0 || value === -1) return true;
+  return (
+    Array.isArray(value) &&
+    value.length === 5 &&
+    value.every(v => typeof v === 'number' && Number.isFinite(v)) &&
+    value[2] > 0 &&
+    value[3] > 0 &&
+    value[0] >= 0 &&
+    value[1] >= 0 &&
+    value[0] + value[2] <= 100.5 &&
+    value[1] + value[3] <= 100.5
+  );
+}
+
+function validCanvas(value: unknown, length: number): value is CanvasPlacement[] {
+  return Array.isArray(value) && value.length === length && value.every(validPlacement);
+}
+
+function filledSlots(slots: VideoSlot[]) {
+  return slots.filter(s => s.platform && s.videoId);
+}
+
+/** Captures the current custom-layout placement of the given (filled) slots. */
+function captureCanvas(slots: VideoSlot[]): CanvasPlacement[] {
+  const { canvas, canvasHidden } = getPrefs();
+  return slots.map(slot => {
+    if (canvasHidden.includes(slot.id)) return -1;
+    const r = canvas[slot.id];
+    return r ? [r.x, r.y, r.w, r.h, r.z] : 0;
+  });
+}
+
+/*
+ * Restores a captured placement. loadSetup puts stream i into slot i, so
+ * placement i becomes slot i's rect. Without one, the canvas is reset to
+ * automatic tiling so stale rects from other streams don't apply.
+ */
+export function applyCanvas(placements: CanvasPlacement[] | undefined) {
+  const canvas: Record<number, CanvasRect> = {};
+  const canvasHidden: number[] = [];
+  placements?.forEach((p, i) => {
+    if (p === -1) canvasHidden.push(i);
+    else if (p !== 0) canvas[i] = { x: p[0], y: p[1], w: p[2], h: p[3], z: p[4] };
+  });
+  updatePrefs({ canvas, canvasHidden });
 }
 
 interface LibraryState {
@@ -28,7 +86,7 @@ interface LibraryState {
 const KEY = 'twill:library:v1';
 const MAX_RECENT = 12;
 const PLATFORMS: Platform[] = ['youtube', 'twitch', 'kick', 'custom'];
-const LAYOUTS: LayoutMode[] = ['stage', 'spotlight', 'theater', 'grid'];
+const LAYOUTS: LayoutMode[] = ['stage', 'spotlight', 'theater', 'grid', 'custom'];
 
 function validStream(value: unknown): value is StreamRef {
   const v = value as StreamRef;
@@ -58,7 +116,7 @@ function load(): LibraryState {
       recent: Array.isArray(data?.recent) ? data.recent.filter(validStream).slice(0, MAX_RECENT) : [],
       setups: Array.isArray(data?.setups)
         ? data.setups.filter(
-            (s: SavedSetup) => s && typeof s.name === 'string' && LAYOUTS.includes(s.layout) && Array.isArray(s.streams) && s.streams.every(validStream)
+            (s: SavedSetup) => s && typeof s.name === 'string' && LAYOUTS.includes(s.layout) && Array.isArray(s.streams) && s.streams.every(validStream) && (s.canvas === undefined || validCanvas(s.canvas, s.streams.length))
           )
         : [],
     };
@@ -113,7 +171,8 @@ export function saveSetup(name: string, layout: LayoutMode, slots: VideoSlot[]):
     id: crypto.randomUUID(),
     name: name.trim().slice(0, 60) || 'Untitled setup',
     layout,
-    streams: slots.filter(s => s.platform && s.videoId).map(s => ({ platform: s.platform!, videoId: s.videoId! })),
+    streams: filledSlots(slots).map(s => ({ platform: s.platform!, videoId: s.videoId! })),
+    canvas: layout === 'custom' ? captureCanvas(filledSlots(slots)) : undefined,
     savedAt: new Date().toISOString(),
   };
   commit({ ...state, setups: [setup, ...state.setups.filter(s => s.name !== setup.name)].slice(0, 30) });
@@ -141,12 +200,12 @@ function fromBase64Url(value: string): string {
 }
 
 export function buildShareUrl(layout: LayoutMode, slots: VideoSlot[]): string {
+  const shared = filledSlots(slots).filter(s => !isPrivateStream({ platform: s.platform!, videoId: s.videoId! }));
   const payload = {
     v: 1,
     l: layout,
-    s: slots
-      .filter(s => s.platform && s.videoId && !isPrivateStream({ platform: s.platform, videoId: s.videoId }))
-      .map(s => [s.platform, s.videoId]),
+    s: shared.map(s => [s.platform, s.videoId]),
+    ...(layout === 'custom' ? { c: captureCanvas(shared) } : {}),
   };
   const url = new URL('/', window.location.origin);
   url.hash = new URLSearchParams({ [SHARE_PARAM]: toBase64Url(JSON.stringify(payload)) }).toString();
@@ -154,17 +213,28 @@ export function buildShareUrl(layout: LayoutMode, slots: VideoSlot[]): string {
 }
 
 /** Reads a shared setup from the current URL fragment, if any. */
-export function readSharedSetup(): { layout: LayoutMode; streams: StreamRef[] } | null {
+export function readSharedSetup(): { layout: LayoutMode; streams: StreamRef[]; canvas?: CanvasPlacement[] } | null {
   try {
     const encoded = new URLSearchParams(window.location.hash.slice(1)).get(SHARE_PARAM);
     if (!encoded) return null;
     const data = JSON.parse(fromBase64Url(encoded));
-    const streams = (Array.isArray(data?.s) ? data.s : [])
-      .map(([platform, videoId]: [Platform, string]) => ({ platform, videoId }))
-      .filter((s: StreamRef) => validStream(s) && !isPrivateStream(s))
-      .slice(0, 8);
-    if (!streams.length) return null;
-    return { layout: LAYOUTS.includes(data.l) ? data.l : 'stage', streams };
+    const raw: unknown[] = Array.isArray(data?.s) ? data.s : [];
+    const placements: unknown[] | null = Array.isArray(data?.c) && data.c.length === raw.length ? data.c : null;
+    const kept: { stream: StreamRef; placement: unknown }[] = [];
+    raw.forEach((entry, i) => {
+      if (!Array.isArray(entry)) return;
+      const stream = { platform: entry[0] as Platform, videoId: entry[1] as string };
+      if (validStream(stream) && !isPrivateStream(stream)) kept.push({ stream, placement: placements?.[i] });
+    });
+    const trimmed = kept.slice(0, 8);
+    if (!trimmed.length) return null;
+    const streams = trimmed.map(k => k.stream);
+    const canvas = trimmed.map(k => k.placement);
+    return {
+      layout: LAYOUTS.includes(data.l) ? data.l : 'stage',
+      streams,
+      canvas: placements && validCanvas(canvas, streams.length) ? canvas : undefined,
+    };
   } catch {
     return null;
   }

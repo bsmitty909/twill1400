@@ -11,6 +11,7 @@ import { PLATFORM_META } from '../../services/urlParser';
 import { StreamLabel } from '../StreamLabel';
 import type { VideoSlot } from '../../types/index.ts';
 import { VideoTile } from './VideoTile';
+import { CanvasLayout } from './CanvasLayout';
 import { GripIcon, PlusIcon } from '../Icons';
 import styles from './NowPlaying.module.css';
 import './split-panes.css';
@@ -22,6 +23,7 @@ import './split-panes.css';
  *   spotlight - first stream large, the rest in a resizable column on the right
  *   theater   - first stream large, the rest in a resizable strip underneath
  *   grid      - equal tiles; column count automatic or fixed via Customize
+ *   custom    - freeform canvas: move, resize, layer and hide each stream
  *
  * Every divider resizes live and its position is remembered per layout.
  * While a divider or tile is dragged, iframes ignore the pointer so the drag
@@ -212,6 +214,7 @@ export function VideoGrid() {
   else if (layout === 'spotlight') content = <SpotlightLayout {...props} />;
   else if (layout === 'theater') content = <TheaterLayout {...props} />;
   else if (layout === 'grid') content = <GridLayout {...props} />;
+  else if (layout === 'custom') content = <CanvasLayout {...props} />;
   else content = <StageLayout {...props} />;
 
   return (

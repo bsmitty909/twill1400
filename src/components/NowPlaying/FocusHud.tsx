@@ -8,6 +8,7 @@ import { Mixer } from './VolumeControl';
 import { PLATFORM_META } from '../../services/urlParser';
 import type { LayoutMode, VideoSlot } from '../../types/index.ts';
 import {
+  CanvasIcon,
   ChatIcon,
   CloseIcon,
   GridIcon,
@@ -27,6 +28,7 @@ const LAYOUTS: { id: LayoutMode; label: string; Icon: typeof StageIcon }[] = [
   { id: 'spotlight', label: 'Spotlight', Icon: SpotlightIcon },
   { id: 'theater', label: 'Theater', Icon: TheaterIcon },
   { id: 'grid', label: 'Grid', Icon: GridIcon },
+  { id: 'custom', label: 'Custom', Icon: CanvasIcon },
 ];
 
 const IDLE_MS = 2600;

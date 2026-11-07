@@ -8,6 +8,15 @@ import { useSyncExternalStore } from 'react';
 
 export type GridColumns = 'auto' | 1 | 2 | 3 | 4;
 
+/** A tile on the custom canvas, in percent of the canvas size. */
+export interface CanvasRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  z: number;
+}
+
 export interface Prefs {
   gridColumns: GridColumns;
   /** Space between tiles in px. */
@@ -20,6 +29,13 @@ export interface Prefs {
   focusMode: boolean;
   /** Slot shown alone (fills the viewport); null shows the whole layout. */
   soloSlot: number | null;
+  /** Custom layout: tile rectangles keyed by slot id. */
+  canvas: Record<number, CanvasRect>;
+  /** Custom layout: slots taken off the canvas (they stop playing). */
+  canvasHidden: number[];
+  canvasSnap: boolean;
+  /** Custom layout edit mode (not persisted). */
+  canvasEdit: boolean;
   sizes: {
     stageColumns: number[];
     stageMain: number[];
@@ -53,8 +69,27 @@ const DEFAULTS: Prefs = {
   chatWidth: 340,
   focusMode: false,
   soloSlot: null,
+  canvas: {},
+  canvasHidden: [],
+  canvasSnap: true,
+  canvasEdit: false,
   sizes: DEFAULT_SIZES,
 };
+
+function validRect(r: unknown): r is CanvasRect {
+  if (!r || typeof r !== 'object') return false;
+  const { x, y, w, h, z } = r as Record<string, unknown>;
+  return [x, y, w, h, z].every(v => typeof v === 'number' && Number.isFinite(v)) && (w as number) > 0 && (h as number) > 0;
+}
+
+function loadCanvas(value: unknown): Record<number, CanvasRect> {
+  const out: Record<number, CanvasRect> = {};
+  if (!value || typeof value !== 'object') return out;
+  for (const [key, rect] of Object.entries(value)) {
+    if (/^\d+$/.test(key) && validRect(rect)) out[Number(key)] = rect;
+  }
+  return out;
+}
 
 function validSizes(value: unknown, length: number): value is number[] {
   return Array.isArray(value) && value.length === length && value.every(v => typeof v === 'number' && v > 0 && v < 100);
@@ -77,6 +112,10 @@ function load(): Prefs {
       chatWidth: Number.isFinite(saved.chatWidth) ? Math.min(CHAT_MAX_WIDTH, Math.max(CHAT_MIN_WIDTH, saved.chatWidth)) : DEFAULTS.chatWidth,
       focusMode: false,
       soloSlot: null,
+      canvas: loadCanvas(saved.canvas),
+      canvasHidden: Array.isArray(saved.canvasHidden) ? saved.canvasHidden.filter(Number.isInteger) : [],
+      canvasSnap: typeof saved.canvasSnap === 'boolean' ? saved.canvasSnap : DEFAULTS.canvasSnap,
+      canvasEdit: false,
       sizes,
     };
   } catch {
@@ -100,6 +139,10 @@ export function updatePrefs(patch: Partial<Prefs> | ((prev: Prefs) => Partial<Pr
 
 export function updateSizes(name: keyof Prefs['sizes'], sizes: number[]) {
   updatePrefs(prev => ({ sizes: { ...prev.sizes, [name]: sizes } }));
+}
+
+export function getPrefs(): Prefs {
+  return state;
 }
 
 export function usePrefs(): Prefs {

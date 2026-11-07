@@ -8,6 +8,7 @@ import {
   readSharedSetup,
   saveSetup,
   useLibrary,
+  applyCanvas,
 } from '../../services/library';
 import type { SavedSetup, StreamRef } from '../../services/library';
 import { PLATFORM_META } from '../../services/urlParser';
@@ -17,7 +18,7 @@ import styles from './NowPlaying.module.css';
 
 export type Notify = (tone: 'success' | 'error', text: string) => void;
 
-const LAYOUT_NAMES = { stage: 'Stage', spotlight: 'Spotlight', theater: 'Theater', grid: 'Grid' } as const;
+const LAYOUT_NAMES = { stage: 'Stage', spotlight: 'Spotlight', theater: 'Theater', grid: 'Grid', custom: 'Custom' } as const;
 
 export function StreamChip({ stream, onClick, onRemove }: { stream: StreamRef; onClick?: () => void; onRemove?: () => void }) {
   const { label, title } = useStreamLabel(stream.platform, stream.videoId);
@@ -94,6 +95,7 @@ export function SetupList({ setups, notify, compact = false }: { setups: SavedSe
             className={styles.setupLoad}
             onClick={() => {
               loadSetup(setup.streams, setup.layout);
+              if (setup.layout === 'custom') applyCanvas(setup.canvas);
               notify('success', `Loaded "${setup.name}".`);
             }}
           >
@@ -199,6 +201,7 @@ export function SharedSetupBanner({ notify }: { notify: Notify }) {
           className={styles.primaryCta}
           onClick={() => {
             loadSetup(shared.streams, shared.layout);
+            if (shared.layout === 'custom') applyCanvas(shared.canvas);
             notify('success', 'Shared setup loaded.');
             close();
           }}

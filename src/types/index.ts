@@ -15,4 +15,4 @@ export interface VideoSlot {
   videoId: string | null;
 }
 
-export type LayoutMode = 'stage' | 'spotlight' | 'theater' | 'grid';
+export type LayoutMode = 'stage' | 'spotlight' | 'theater' | 'grid' | 'custom';

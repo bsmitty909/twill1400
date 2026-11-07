@@ -256,3 +256,10 @@ export const SoloIcon = (p: IconProps) => (
     <path d="M10 9.5v5l4-2.5z" fill="currentColor" />
   </Icon>
 );
+
+export const CanvasIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="2" y="3" width="13" height="10" rx="1" />
+    <rect x="9" y="10" width="13" height="11" rx="1" />
+  </Icon>
+);

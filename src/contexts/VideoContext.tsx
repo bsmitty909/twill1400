@@ -62,7 +62,7 @@ function loadSession(): { slots: VideoSlot[]; layout: LayoutMode; volumes: numbe
       const valid = saved && PLATFORMS.includes(saved.platform) && typeof saved.videoId === 'string' && saved.videoId;
       return valid ? { ...slot, platform: saved.platform, videoId: saved.videoId } : slot;
     });
-    const layouts: LayoutMode[] = ['stage', 'spotlight', 'theater', 'grid'];
+    const layouts: LayoutMode[] = ['stage', 'spotlight', 'theater', 'grid', 'custom'];
     const layout: LayoutMode = layouts.includes(data?.layout) ? data.layout : 'stage';
     const volumes = defaultVolumes().map((v, i) => {
       const saved = Array.isArray(data?.volumes) ? Number(data.volumes[i]) : NaN;

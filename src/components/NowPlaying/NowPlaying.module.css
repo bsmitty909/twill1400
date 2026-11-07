@@ -1928,3 +1928,236 @@ input[type='range'].volumeSlider:focus-visible {
     flex-wrap: wrap;
   }
 }
+
+/* ---------------------------------------------------- custom canvas */
+
+.canvasWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.canvasEditing {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 10% 10%;
+  outline: 1px dashed var(--border-strong);
+}
+
+.canvasItem {
+  position: absolute;
+  padding: calc(var(--gap) / 2);
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.canvasItem > .tile {
+  flex: 1;
+}
+
+.canvasEmpty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-strong);
+}
+
+.canvasEditTab {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 10px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-top: 0;
+  border-radius: 0 0 2px 2px;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+
+.canvasEditTab:hover,
+.canvasEditTab:focus-visible {
+  opacity: 1;
+  color: var(--text);
+}
+
+.canvasBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+}
+
+.canvasBarGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.canvasBarLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.canvasChipName {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvasSnap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.canvasDone {
+  margin-left: auto;
+  background: var(--accent);
+  border-color: var(--accent-hover);
+  color: #fff;
+}
+
+.editFrame {
+  position: absolute;
+  inset: calc(var(--gap) / 2);
+  z-index: 20;
+  cursor: move;
+  touch-action: none;
+  background: rgb(11 12 13 / 0.35);
+  outline: 2px solid var(--platform, var(--accent));
+  outline-offset: -2px;
+}
+
+.editFrame:focus-visible {
+  outline-color: #fff;
+}
+
+.editHead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  color: var(--text);
+  background: rgb(11 12 13 / 0.8);
+}
+
+.editName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editHide {
+  display: inline-flex;
+  padding: 3px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+}
+
+.editHide:hover {
+  color: #fff;
+  border-color: var(--text-dim);
+}
+
+.editSize {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--platform, var(--accent));
+  border: 1px solid #fff;
+  touch-action: none;
+}
+
+.handle_n,
+.handle_s {
+  left: calc(50% - 6px);
+  cursor: ns-resize;
+}
+.handle_e,
+.handle_w {
+  top: calc(50% - 6px);
+  cursor: ew-resize;
+}
+.handle_n,
+.handle_ne,
+.handle_nw {
+  top: -5px;
+}
+.handle_s,
+.handle_se,
+.handle_sw {
+  bottom: -5px;
+}
+.handle_e,
+.handle_ne,
+.handle_se {
+  right: -5px;
+}
+.handle_w,
+.handle_nw,
+.handle_sw {
+  left: -5px;
+}
+.handle_ne,
+.handle_sw {
+  cursor: nesw-resize;
+}
+.handle_nw,
+.handle_se {
+  cursor: nwse-resize;
+}

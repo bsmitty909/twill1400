@@ -14,6 +14,7 @@ import { Mixer } from './VolumeControl';
 import { SetupsPanel, ShareButton, SharedSetupBanner } from './Library';
 import type { Notify } from './Library';
 import {
+  CanvasIcon,
   BookmarkIcon,
   ChatIcon,
   CloseIcon,
@@ -36,6 +37,7 @@ const LAYOUTS: { id: LayoutMode; label: string; Icon: typeof StageIcon }[] = [
   { id: 'spotlight', label: 'Spotlight', Icon: SpotlightIcon },
   { id: 'theater', label: 'Theater', Icon: TheaterIcon },
   { id: 'grid', label: 'Grid', Icon: GridIcon },
+  { id: 'custom', label: 'Custom', Icon: CanvasIcon },
 ];
 
 const SHORTCUTS: [string, string][] = [
@@ -44,6 +46,7 @@ const SHORTCUTS: [string, string][] = [
   ['1-8', 'Listen to that slot'],
   ['M', 'Mute / unmute'],
   ['L', 'Next layout'],
+  ['E', 'Edit custom layout'],
   ['C', 'Toggle chat'],
   ['/', 'Paste a new link'],
   ['Esc', 'Leave solo, then focus'],
@@ -248,7 +251,7 @@ function Popover({ label, icon, active, children }: { label: string; icon: React
 
 function CustomizePanel() {
   const { gridColumns, gap, showLabels } = usePrefs();
-  const { layout } = useVideo();
+  const { layout, setLayout } = useVideo();
   const columnOptions: GridColumns[] = ['auto', 1, 2, 3, 4];
 
   return (
@@ -286,7 +289,18 @@ function CustomizePanel() {
       <button type="button" className={styles.resetButton} onClick={() => updatePrefs({ sizes: DEFAULT_SIZES })}>
         Reset pane sizes
       </button>
-      <p className={styles.hint}>Drag the dividers between streams to resize in real time. Sizes are saved per layout.</p>
+      {layout === 'custom' ? (
+        <button type="button" className={styles.resetButton} onClick={() => updatePrefs({ canvasEdit: true })}>
+          Edit custom layout
+        </button>
+      ) : (
+        <button type="button" className={styles.resetButton} onClick={() => setLayout('custom')}>
+          Switch to Custom layout
+        </button>
+      )}
+      <p className={styles.hint}>
+        Drag the dividers between streams to resize in real time. Sizes are saved per layout. Custom lets you place, size, layer and hide every stream freely.
+      </p>
     </div>
   );
 }
@@ -444,7 +458,7 @@ function Toolbar({ notify }: { notify: Notify }) {
 
 function useKeyboardShortcuts() {
   const { slots, layout, setLayout, toggleMuteAll, toggleSlotAudio } = useVideo();
-  const { chatOpen, focusMode, soloSlot } = usePrefs();
+  const { chatOpen, focusMode, soloSlot, canvasEdit } = usePrefs();
   const { audioSlot } = useVideo();
 
   const handler = useCallback(
@@ -467,7 +481,9 @@ function useKeyboardShortcuts() {
         const target = audioSlot ?? slots.find(sl => sl.platform)?.id;
         if (soloSlot !== null) updatePrefs({ soloSlot: null });
         else if (target !== undefined) updatePrefs({ soloSlot: target, focusMode: true });
-      } else if (key === 'escape' && soloSlot !== null) updatePrefs({ soloSlot: null });
+      } else if (key === 'e' && layout === 'custom') updatePrefs({ canvasEdit: !canvasEdit });
+      else if (key === 'escape' && canvasEdit) updatePrefs({ canvasEdit: false });
+      else if (key === 'escape' && soloSlot !== null) updatePrefs({ soloSlot: null });
       else if (key === 'escape' && focusMode) updatePrefs({ focusMode: false });
       else if (key === 'l') {
         const index = LAYOUTS.findIndex(l => l.id === layout);
@@ -475,7 +491,7 @@ function useKeyboardShortcuts() {
       } else return;
       e.preventDefault();
     },
-    [slots, layout, setLayout, toggleMuteAll, toggleSlotAudio, chatOpen, focusMode, soloSlot, audioSlot]
+    [slots, layout, setLayout, toggleMuteAll, toggleSlotAudio, chatOpen, focusMode, soloSlot, audioSlot, canvasEdit]
   );
 
   useEffect(() => {
